@@ -9,14 +9,13 @@
 #include "node_data.h"
 #include "ports.h"
 
-
 uint32_t ui_port_index(void* const controller, const char* symbol) {
    printf("\nui_port_index(%s)", symbol);
    fflush(stdout);
-   struct node_data *node = (struct node_data *) controller;
+   struct node_data* node = (struct node_data*)controller;
 
    for (int n = 0; n < node->n_ports; n++) {
-    if (!strcmp(symbol, node->ports[n].name)) return node->ports[n].index;
+      if (!strcmp(symbol, node->ports[n].name)) return node->ports[n].index;
    }
 
    return LV2UI_INVALID_PORT_INDEX;

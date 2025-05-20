@@ -1,8 +1,9 @@
+#include "program.h"
+
 #include <gtk/gtk.h>
 #include <pipewire/pipewire.h>
 
 #include "constants.h"
-#include "program.h"
 
 pthread_mutex_t program_lock;
 
@@ -19,5 +20,3 @@ void program_init() {
 }
 
 void program_gtk_main() { gtk_main(); }
-
-

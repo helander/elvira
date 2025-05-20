@@ -2,7 +2,6 @@
 #define _NODE_DATA_DEF
 
 #include <lilv/lilv.h>
-#include <suil/suil.h>
 #include <lv2/atom/atom.h>
 #include <lv2/options/options.h>
 #include <lv2/worker/worker.h>
@@ -10,6 +9,7 @@
 #include <pipewire/pipewire.h>
 #include <spa/utils/ringbuffer.h>
 #include <stdint.h>
+#include <suil/suil.h>
 
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
@@ -31,8 +31,8 @@ struct pw_data {
 struct lv2_data {
    const LilvPlugin *lilvPlugin;  // byt namn till lilv_plugin
    LilvNode *lilv_preset;
-   LilvInstance *instance;        // byt namn till lilv_instance
-   LV2_Handle handle;             // byt namn till lv2_handle
+   LilvInstance *instance;  // byt namn till lilv_instance
+   LV2_Handle handle;       // byt namn till lv2_handle
    const LV2_Worker_Interface *iface;
    void *worker_data;
    LV2_Worker_Schedule work_schedule;
@@ -45,7 +45,7 @@ struct lv2_data {
    int32_t block_length;
 
    int start_ui;
-   SuilInstance* suil_instance;
+   SuilInstance *suil_instance;
 };
 
 typedef enum {
@@ -77,8 +77,8 @@ struct atom_input_port {
 
 struct atom_output_port {
    LV2_Atom_Sequence *buffer;
-//   struct spa_ringbuffer ring;
-//   uint8_t *ringbuffer;
+   //   struct spa_ringbuffer ring;
+   //   uint8_t *ringbuffer;
 };
 
 #define ATOM_RINGBUFFER_SIZE 1024 * 16 /* should be power of 2 */

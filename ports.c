@@ -13,56 +13,55 @@
 #include "node_data.h"
 #include "util.h"
 
-
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
 
 #define ATOM_BUFFER_SIZE 16 * 1024
 
 // seq is used to pass the port index and data passes the atom
-static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_index, const void *data, size_t size,
-                     void *user_data) {
-  //printf("\nPort %d send aseq",port_index);
-  //util_print_atom_sequence(aseq);
-  struct node_data *node = (struct node_data *) user_data;
-  LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *) data;
-  if (node->host.suil_instance) {
-
-
-
-   LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
-   if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
-      long payloadSize = aseq->atom.size;
-      while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
-         suil_instance_port_event(node->host.suil_instance, port_index, aev->body.size, constants.atom_eventTransfer, &aev->body);
-         int eventSize =
-             lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
-         char *next = ((char *)aev) + eventSize;
-         payloadSize = payloadSize - eventSize;
-         aev = (LV2_Atom_Event *)next;
+static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_index,
+                              const void *data, size_t size, void *user_data) {
+   // printf("\nPort %d send aseq",port_index);
+   // util_print_atom_sequence(aseq);
+   struct node_data *node = (struct node_data *)user_data;
+   LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)data;
+   if (node->host.suil_instance) {
+      LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
+      if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
+         long payloadSize = aseq->atom.size;
+         while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
+            suil_instance_port_event(node->host.suil_instance, port_index, aev->body.size,
+                                     constants.atom_eventTransfer, &aev->body);
+            int eventSize =
+                lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
+            char *next = ((char *)aev) + eventSize;
+            payloadSize = payloadSize - eventSize;
+            aev = (LV2_Atom_Event *)next;
+         }
       }
    }
-
-  }
 }
 
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, struct node_data *node) {
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_aseq, port_index, aseq, aseq->atom.size + sizeof(LV2_Atom), false, node);
+   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_aseq, port_index, aseq,
+                  aseq->atom.size + sizeof(LV2_Atom), false, node);
 }
 
 // seq is used to pass the port index and data passes the atom
-static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_index, const void *atom, size_t size,
-                     void *user_data) {
-  //printf("\nPort %d send atom",port_index);
-  //util_print_atom(atom);
-  struct node_data *node = (struct node_data *) user_data;
-  if (node->host.suil_instance)
-     suil_instance_port_event(node->host.suil_instance, port_index, size, constants.atom_eventTransfer, atom);
+static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_index,
+                              const void *atom, size_t size, void *user_data) {
+   // printf("\nPort %d send atom",port_index);
+   // util_print_atom(atom);
+   struct node_data *node = (struct node_data *)user_data;
+   if (node->host.suil_instance)
+      suil_instance_port_event(node->host.suil_instance, port_index, size,
+                               constants.atom_eventTransfer, atom);
 }
 
 static void send_atom(int port_index, LV2_Atom *atom, struct node_data *node) {
-  //char prefix[30];
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_atom, port_index, atom, atom->size + sizeof(LV2_Atom), false, node);
+   // char prefix[30];
+   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_atom, port_index, atom,
+                  atom->size + sizeof(LV2_Atom), false, node);
 }
 
 //============================= control input
@@ -72,15 +71,15 @@ static void setup_control_input(struct port_data *this, struct node_data *node) 
    LilvInstance *instance = node->host.instance;
    struct pw_filter *filter = node->pw.filter;
    this->variant.control_input.current = this->dfault;
-   //printf("\nControl input port %d (%s) start value: %f", this->index, this->name, this->variant.control_input.current);
-   //fflush(stdout);
+   // printf("\nControl input port %d (%s) start value: %f", this->index, this->name,
+   // this->variant.control_input.current); fflush(stdout);
    lilv_instance_connect_port(instance, this->index, &this->variant.control_input.current);
-   this->pwPort = pw_filter_add_port(
-       filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-       pw_properties_new(PW_KEY_FORMAT_DSP, "control:f32", PW_KEY_PORT_NAME, this->name, "port.hidden", "true", NULL),
-       NULL, 0);
+   this->pwPort =
+       pw_filter_add_port(filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                          pw_properties_new(PW_KEY_FORMAT_DSP, "control:f32", PW_KEY_PORT_NAME,
+                                            this->name, "port.hidden", "true", NULL),
+                          NULL, 0);
 }
-
 
 static void post_run_control_input(struct port_data *this, struct node_data *node) {
    LilvInstance *instance = node->host.instance;
@@ -200,7 +199,7 @@ static void pre_run_atom_input(struct port_data *this, struct node_data *node, u
       uint32_t write_index;
       spa_ringbuffer_get_read_index(&this->variant.atom_input.ring, &read_index);
       spa_ringbuffer_get_write_index(&this->variant.atom_input.ring, &write_index);
-      while  ((write_index - read_index) >= sizeof(uint16_t)) {
+      while ((write_index - read_index) >= sizeof(uint16_t)) {
          // printf("\ndiff write index %x   read_index
          // %x",write_index,read_index);fflush(stdout);
          uint16_t msg_len;
@@ -252,7 +251,7 @@ static void pre_run_atom_input(struct port_data *this, struct node_data *node, u
             int size = lv2_atom_pad_size(sizeof(LV2_Atom_Event) + atom->size);
             aseq->atom.size += size;
          }
-         break; //limit to one message per run 
+         break;  // limit to one message per run
          //        spa_ringbuffer_get_read_index(&this->variant.atom_input.ring, &read_index);
          //        spa_ringbuffer_get_write_index(&this->variant.atom_input.ring, &write_index);
          // printf("\nafter read update write index %x   read_index
@@ -312,7 +311,7 @@ static void pre_run_atom_input(struct port_data *this, struct node_data *node, u
 }
 
 static void post_run_atom_input(struct port_data *this, struct node_data *node) {
-   //LilvInstance *instance = node->host.instance;
+   // LilvInstance *instance = node->host.instance;
    if (this->pwbuffer) pw_filter_queue_buffer(this->pwPort, this->pwbuffer);
 }
 
@@ -330,8 +329,8 @@ static void setup_atom_output(struct port_data *this, struct node_data *node) {
    LilvInstance *instance = node->host.instance;
    struct pw_filter *filter = node->pw.filter;
    this->variant.atom_output.buffer = calloc(1, ATOM_BUFFER_SIZE);
-   //this->variant.atom_output.ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
-   //spa_ringbuffer_init(&this->variant.atom_output.ring);
+   // this->variant.atom_output.ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+   // spa_ringbuffer_init(&this->variant.atom_output.ring);
    lilv_instance_connect_port(instance, this->index, this->variant.atom_output.buffer);
    this->pwPort = pw_filter_add_port(
        filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
@@ -349,11 +348,11 @@ static void pre_run_atom_output(struct port_data *this, struct node_data *node, 
 }
 
 static void post_run_atom_output(struct port_data *this, struct node_data *node) {
-   //LilvInstance *instance = node->host.instance;
+   // LilvInstance *instance = node->host.instance;
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)this->variant.atom_output.buffer;
    util_print_atom_sequence(node->nodename, "output", this->index, aseq);
    send_atom_sequence(this->index, aseq, node);
-   //if (!this->pwbuffer) return;
+   // if (!this->pwbuffer) return;
    LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
    if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
       struct spa_data *d;
@@ -376,7 +375,7 @@ static void post_run_atom_output(struct port_data *this, struct node_data *node)
             spa_pod_builder_control(&builder, 0, SPA_CONTROL_Midi);
             spa_pod_builder_bytes(&builder, mididata, aev->body.size);
          }
-         //send_atom(this->index,&aev->body, node);
+         // send_atom(this->index,&aev->body, node);
          int eventSize =
              lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
          char *next = ((char *)aev) + eventSize;
@@ -384,8 +383,8 @@ static void post_run_atom_output(struct port_data *this, struct node_data *node)
          aev = (LV2_Atom_Event *)next;
       }
       if (this->pwbuffer) {
-        spa_pod_builder_pop(&builder, &frame);
-        d->chunk->size = builder.state.offset;
+         spa_pod_builder_pop(&builder, &frame);
+         d->chunk->size = builder.state.offset;
       }
    }
    if (this->pwbuffer) pw_filter_queue_buffer(this->pwPort, this->pwbuffer);
@@ -401,7 +400,7 @@ static void init_atom_output(struct port_data *this) {
 void ports_init(struct node_data *node) {
    const LilvPlugin *plugin = node->host.lilvPlugin;
    char *nodename = node->nodename;
-   //printf("\nports_init");
+   // printf("\nports_init");
    fflush(stdout);
    memset(dummyAudioInput, 0, sizeof(dummyAudioInput));
 
@@ -410,7 +409,7 @@ void ports_init(struct node_data *node) {
    for (int n = 0; n < n_ports; n++) {
       struct port_data *port = &node->ports[n];
       port->index = n;
-      //printf("\ninit_ports port %d", port->index);
+      // printf("\ninit_ports port %d", port->index);
       fflush(stdout);
 
       port->lilvPort = lilv_plugin_get_port_by_index(plugin, n);
@@ -449,7 +448,7 @@ void ports_init(struct node_data *node) {
 }
 
 void ports_write_port(void *const controller, const uint32_t port_index, const uint32_t buffer_size,
-                    const uint32_t protocol, const void *const buffer) {
+                      const uint32_t protocol, const void *const buffer) {
    struct node_data *node = (struct node_data *)controller;
    if (protocol == 0U) {
       const float value = *(const float *)buffer;
@@ -462,10 +461,10 @@ void ports_write_port(void *const controller, const uint32_t port_index, const u
          printf("\nWrite to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
          fflush(stdout);
       } else {
-         //printf("\n[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
-         //       node->nodename, port_index, buffer_size, atom->size, atom->type,
-         //       constants_unmap(constants, atom->type));
-         //fflush(stdout);
+         // printf("\n[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
+         //        node->nodename, port_index, buffer_size, atom->size, atom->type,
+         //        constants_unmap(constants, atom->type));
+         // fflush(stdout);
          struct port_data *port = &node->ports[port_index];
 
          uint16_t len = buffer_size;
@@ -496,5 +495,3 @@ void ports_write_port(void *const controller, const uint32_t port_index, const u
       }
    }
 }
-
-
