@@ -34,7 +34,7 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 pkg_check_modules(LILV REQUIRED lilv-0)
 pkg_check_modules(SUIL REQUIRED suil-0)
 
-add_executable(pw-lv2-host
+add_executable(elvira
     main.c
     constants.c
     node.c
@@ -44,7 +44,7 @@ add_executable(pw-lv2-host
     program.c
 )
 
-target_include_directories(pw-lv2-host PRIVATE 
+target_include_directories(elvira PRIVATE 
     ${PIPEWIRE_INCLUDE_DIRS}
     ${LV2_INCLUDE_DIRS}
     ${GTK3_INCLUDE_DIRS}
@@ -52,7 +52,7 @@ target_include_directories(pw-lv2-host PRIVATE
     ${SUIL_INCLUDE_DIRS}
 )
 
-target_link_libraries(pw-lv2-host PRIVATE
+target_link_libraries(elvira PRIVATE
     ${LILV_LIBRARIES}
     ${SUIL_LIBRARIES}
     ${GTK3_LIBRARIES}

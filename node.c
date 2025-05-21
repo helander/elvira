@@ -70,7 +70,7 @@ static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uin
    struct node_data *node = (struct node_data *)handle;
    // printf("\nHost: schedule_work()");fflush(stdout);
    //  Fire execution of on_worker in loop thread
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_worker, 0, data, size, false, node);
+   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.worker_loop), on_worker, 0, data, size, false, node);
    return LV2_WORKER_SUCCESS;
 }
 
@@ -81,7 +81,7 @@ static void on_process(void *userdata, struct spa_io_position *position) {
       // Defer start of plugin UI until any node port is connected
       node->pw.connected = 1;
       if (node->host.start_ui)
-         pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), pluginui_on_start, 0, NULL, 0,
+         pw_loop_invoke(pw_thread_loop_get_loop(node->pw.node_loop), pluginui_on_start, 0, NULL, 0,
                         false, node);
    }
 
@@ -147,10 +147,6 @@ static void on_process(void *userdata, struct spa_io_position *position) {
    }
 }
 
-static void do_quit(void *userdata, int signal_number) {
-   struct node_data *node = userdata;
-   pw_thread_loop_signal(node->pw.loop, false);
-}
 
 static void load_plugin(struct node_data *node) {
    LilvNode *uri = lilv_new_uri(constants.world, node->plugin_uri);
@@ -172,10 +168,8 @@ static int on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void
                      void *user_data) {
    struct node_data *node = (struct node_data *)user_data;
    char *preset_uri = (char *)data;
-   printf("\nincoming preset uri %lx [%s]  %lx", preset_uri, preset_uri, node);
 
-   printf("\nselect [%s]", preset_uri);
-   pthread_mutex_lock(&program_lock);
+   //pthread_mutex_lock(&program_lock);
 
    if (strlen(preset_uri)) {
       printf("\nAttempt to apply preset %s.", preset_uri);
@@ -206,12 +200,13 @@ static int on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void
          fflush(stdout);
       }
    }
-   lilv_instance_deactivate(node->host.instance);
-   pthread_mutex_unlock(&program_lock);
+   //lilv_instance_deactivate(node->host.instance);
+   //pthread_mutex_unlock(&program_lock);
 }
 
 static void on_command(void *data, const struct spa_command *command) {
    struct node_data *node = (struct node_data *)data;
+         printf("\n oncom start  [%s] node %lx  filter %lx",node->nodename,node, node->pw.filter);fflush(stdout);
    uint32_t id = SPA_NODE_COMMAND_ID(command);
    if (id == SPA_NODE_COMMAND_User) {
       uint8_t *p = (uint8_t *)command;
@@ -221,7 +216,7 @@ static void on_command(void *data, const struct spa_command *command) {
 
       char uri[100];
       if (sscanf(command_string, "preset %s", uri) == 1) {
-         pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_preset, 0, uri, strlen(uri) + 1,
+         pw_loop_invoke(pw_thread_loop_get_loop(master_loop), on_preset, 0, uri, strlen(uri) + 1,
                         false, node);
       } else {
          printf("\nUnknown command [%s]", command_string);
@@ -232,6 +227,7 @@ static void on_command(void *data, const struct spa_command *command) {
    }
    // dump("pod",&command->pod,command->pod.size+64);
    // print_command(&command->pod);
+         printf("\n oncom end  [%s] node %lx  filter %lx",node->nodename,node, node->pw.filter);fflush(stdout);
 
    fflush(stdout);
 }
@@ -242,18 +238,26 @@ void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa
    fflush(stdout);
 }
 
+
+void on_filter_destroy(void *data) {
+   struct node_data *node = (struct node_data *) data;
+   if (node->pw.filter) pw_filter_destroy(node->pw.filter);
+}
+
+
 static const struct pw_filter_events filter_events = {
     PW_VERSION_FILTER_EVENTS,
     .process = on_process,
     .command = on_command,
+    .destroy = on_filter_destroy,
     .param_changed = on_param_changed,
 };
 
 static int on_start(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                     void *user_data) {
-   struct node_data *node = (struct node_data *)user_data;
+   struct node_data *node = (struct node_data *) user_data;
 
-   pthread_mutex_lock(&program_lock);
+   //pthread_mutex_lock(&program_lock);
    load_plugin(node);
 
    char latency[50];
@@ -268,15 +272,14 @@ static int on_start(struct spa_loop *loop, bool async, uint32_t seq, const void 
       strcpy(node->nodename,
              strdup(lilv_node_as_string(lilv_plugin_get_name(node->host.lilvPlugin))));
 
-   pw_loop_add_signal(pw_thread_loop_get_loop(node->pw.loop), SIGINT, do_quit, node);
-   pw_loop_add_signal(pw_thread_loop_get_loop(node->pw.loop), SIGTERM, do_quit, node);
 
    node->pw.filter =
-       pw_filter_new_simple(pw_thread_loop_get_loop(node->pw.loop), node->nodename,
+       pw_filter_new_simple(pw_thread_loop_get_loop(node->pw.node_loop), node->nodename,
                             pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY,
                                               "Filter", PW_KEY_MEDIA_ROLE, "DSP", PW_KEY_MEDIA_NAME,
                                               "--", PW_KEY_NODE_LATENCY, latency, NULL),
                             &filter_events, node);
+
 
    ports_init(node);
 
@@ -290,11 +293,10 @@ static int on_start(struct spa_loop *loop, bool async, uint32_t seq, const void 
    if (pw_filter_connect(node->pw.filter, PW_FILTER_FLAG_RT_PROCESS | PW_FILTER_FLAG_DRIVER, params,
                          1) < 0) {
       fprintf(stderr, "can't connect\n");
-      pthread_mutex_unlock(&program_lock);
+      //pthread_mutex_unlock(&program_lock);
       return -1;
    }
 
-   // send_string_param(node->pw.filter, NULL);
 
    {
       uint32_t n_features = 0;
@@ -381,12 +383,16 @@ static int on_start(struct spa_loop *loop, bool async, uint32_t seq, const void 
    }
 
    lilv_instance_activate(node->host.instance);
-   pthread_mutex_unlock(&program_lock);
+   //pthread_mutex_unlock(&program_lock);
 
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_preset, 0, node->preset_uri,
-                  sizeof(node->preset_uri), false, node);
+   pw_thread_loop_start(node->pw.node_loop);
+   if (node->pw.worker_loop != node->pw.node_loop) {
+     pw_thread_loop_start(node->pw.worker_loop);
+   }
 
-   printf("\nStartup done.");
+   pw_loop_invoke(pw_thread_loop_get_loop(master_loop), on_preset, 0, node->preset_uri, sizeof(node->preset_uri), false, node);
+
+   printf("\nStartup done for node [%s]", node->nodename);
    fflush(stdout);
 }
 
@@ -400,20 +406,39 @@ void node_set_samplerate(struct node_data *node, int samplerate) {
 
 void node_set_latency(struct node_data *node, int period) { node->pw.latency_period = period; }
 
-void node_init(struct node_data *node) {
+void node_create(struct node_data *node) {
+   node->nodename[0] = 0;
+   node->plugin_uri[0] = 0;
+   node->preset_uri[0] = 0;
+   node->pw.filter = NULL;
+   node->host.lilv_preset = NULL;
+   node->host.start_ui = 1;
+   node->host.suil_instance = NULL;
+   node->pw.node_loop = pw_thread_loop_new("node", NULL);
+   node->pw.worker_loop = node->pw.node_loop;
+}
+
+void node_destroy(struct node_data *node) {
+   printf("\nTermination of node [%s]",node->nodename);fflush(stdout);
+   int separate_worker_loop = node->pw.worker_loop != node->pw.node_loop;
+   pw_thread_loop_destroy(node->pw.node_loop);
+   if (separate_worker_loop) {
+      pw_thread_loop_destroy(node->pw.worker_loop);
+   }
+
+   node->pw.node_loop =  NULL;
+   node->pw.worker_loop = NULL;
+   node->pw.filter = NULL;
    node->nodename[0] = 0;
    node->plugin_uri[0] = 0;
    node->preset_uri[0] = 0;
    node->host.lilv_preset = NULL;
-   node->host.start_ui = 1;
    node->host.suil_instance = NULL;
-   node->pw.loop = pw_thread_loop_new(node->nodename, NULL);
 }
 
 void node_start(struct node_data *node) {
-   printf("\nnode start [%s] %lx   %lx", node->preset_uri, node->preset_uri, node);
-   pw_thread_loop_start(node->pw.loop);
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_start, 0, NULL, 0, false, node);
+   pw_thread_loop_start(master_loop);
+   pw_loop_invoke(pw_thread_loop_get_loop(master_loop), on_start, 0, NULL, 0, false, node);
 }
 
 void node_set_plugin(struct node_data *node, const char *plugin_uri) {

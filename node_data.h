@@ -20,7 +20,10 @@ struct port_data;
 //
 
 struct pw_data {
-   struct pw_thread_loop *loop;
+   //struct pw_thread_loop *loop;
+   struct pw_thread_loop *master_loop;
+   struct pw_thread_loop *node_loop;
+   struct pw_thread_loop *worker_loop;
    struct pw_filter *filter;
    int64_t clock_time;
    int connected;

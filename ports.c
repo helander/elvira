@@ -43,7 +43,7 @@ static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_i
 }
 
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, struct node_data *node) {
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_aseq, port_index, aseq,
+   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.node_loop), on_port_event_aseq, port_index, aseq,
                   aseq->atom.size + sizeof(LV2_Atom), false, node);
 }
 
@@ -60,7 +60,7 @@ static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_i
 
 static void send_atom(int port_index, LV2_Atom *atom, struct node_data *node) {
    // char prefix[30];
-   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.loop), on_port_event_atom, port_index, atom,
+   pw_loop_invoke(pw_thread_loop_get_loop(node->pw.node_loop), on_port_event_atom, port_index, atom,
                   atom->size + sizeof(LV2_Atom), false, node);
 }
 
