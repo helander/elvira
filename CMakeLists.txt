@@ -35,16 +35,19 @@ pkg_check_modules(LILV REQUIRED lilv-0)
 pkg_check_modules(SUIL REQUIRED suil-0)
 
 add_executable(elvira
-    main.c
+    elvira.c
     constants.c
-    node.c
+    cJSON.c
+    enginegroup.c
+    controller.c
+    stb_ds.c
+    engine.c
     ports.c
     ui.c
     util.c
-    program.c
 )
 
-target_include_directories(elvira PRIVATE 
+target_include_directories(elvira PRIVATE
     ${PIPEWIRE_INCLUDE_DIRS}
     ${LV2_INCLUDE_DIRS}
     ${GTK3_INCLUDE_DIRS}

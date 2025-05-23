@@ -57,4 +57,4 @@ struct constants {
 
 extern struct constants constants;
 
-extern void initConstants();
+extern void constants_init();

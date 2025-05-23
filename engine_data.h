@@ -1,5 +1,5 @@
-#ifndef _NODE_DATA_DEF
-#define _NODE_DATA_DEF
+#ifndef _ENGINE_DATA_DEF
+#define _ENGINE_DATA_DEF
 
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
@@ -9,20 +9,21 @@
 #include <pipewire/pipewire.h>
 #include <spa/utils/ringbuffer.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <suil/suil.h>
 
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
 
 // Enable forward references
-struct node_data;
+struct engine_data;
+typedef struct engine_data Engine;
 struct port_data;
 //
 
 struct pw_data {
-   //struct pw_thread_loop *loop;
    struct pw_thread_loop *master_loop;
-   struct pw_thread_loop *node_loop;
+   struct pw_thread_loop *engine_loop;
    struct pw_thread_loop *worker_loop;
    struct pw_filter *filter;
    int64_t clock_time;
@@ -46,8 +47,9 @@ struct lv2_data {
    struct spa_ringbuffer work_response_ring;
    uint8_t work_response_buffer[WORK_RESPONSE_RINGBUFFER_SIZE];
    int32_t block_length;
-
-   int start_ui;
+   bool worker_loop;
+   bool engine_worker_loop;
+   bool start_ui;
    SuilInstance *suil_instance;
 };
 
@@ -105,14 +107,15 @@ struct port_data {
       struct atom_input_port atom_input;
       struct atom_output_port atom_output;
    } variant;
-   void (*setup)(struct port_data *port, struct node_data *node);
-   void (*pre_run)(struct port_data *port, struct node_data *node, uint64_t frame, float denom,
+   void (*setup)(struct port_data *port, Engine *engine);
+   void (*pre_run)(struct port_data *port, Engine *engine, uint64_t frame, float denom,
                    uint64_t n_samples);
-   void (*post_run)(struct port_data *port, struct node_data *node);
+   void (*post_run)(struct port_data *port, Engine *engine);
 };
 
-struct node_data {
-   char nodename[200];
+struct engine_data {
+   char groupname[50];
+   char enginename[50];
    char plugin_uri[200];
    char preset_uri[200];
    int64_t clock_time;
@@ -121,5 +124,4 @@ struct node_data {
    int n_ports;
    struct port_data ports[100];
 };
-
 #endif

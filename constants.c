@@ -46,7 +46,7 @@ static const char *uri_table_unmap(LV2_URID_Map_Handle handle, LV2_URID urid) {
    return NULL;
 }
 
-void initConstants() {
+void constants_init() {
    uri_table_init(&constants.uri_table);
    constants.world = lilv_world_new();
    lilv_world_load_all(constants.world);

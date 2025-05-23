@@ -1,0 +1,18 @@
+{
+  "group": "studio 1",
+  "engines": [
+    {
+      "name": "Salamander(sfizz)",
+      "plugin": "http://sfztools.github.io/sfizz",
+      "preset": "http://helander.network/pianot",
+      "showui": true,
+      "engineworker": true
+    },
+    {
+      "name": "Hammond B3",
+      "plugin": "http://gareus.org/oss/lv2/b_synth",
+      "worker": true,
+      "showui": true
+    }
+  ]
+}
