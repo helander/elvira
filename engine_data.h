@@ -1,5 +1,4 @@
-#ifndef _ENGINE_DATA_DEF
-#define _ENGINE_DATA_DEF
+#pragma once
 
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
@@ -124,4 +123,3 @@ struct engine_data {
    int n_ports;
    struct port_data ports[100];
 };
-#endif

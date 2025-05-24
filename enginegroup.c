@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "enginegroup.h"
-#include "cJSON.h"
+#include "utils/cJSON.h"
 
 void enginegroup_free(EngineGroup *group) {
    for (int i = 0; i < group->engine_count; ++i) {

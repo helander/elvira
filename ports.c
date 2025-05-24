@@ -9,9 +9,9 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "constants.h"
+#include "utils/constants.h"
 #include "engine_data.h"
-#include "util.h"
+#include "utils/util.h"
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];

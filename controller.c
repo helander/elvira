@@ -6,7 +6,7 @@
 
 #include "enginegroup.h"
 
-#include "stb_ds.h"
+#include "utils/stb_ds.h"
 
 #include "engine_data.h"
 #include "engine.h"
@@ -66,16 +66,18 @@ void controller_start() {
                             pw_properties_new(PW_KEY_MEDIA_TYPE, "elvira", PW_KEY_MEDIA_ROLE, "controller", PW_KEY_MEDIA_NAME, "controller", NULL),
                             &controller_events, &controller);
 
+
+   if (pw_filter_connect(controller.filter, PW_FILTER_FLAG_DRIVER, NULL, 0) < 0) {
+      fprintf(stderr, "can't connect\n");
+      return;
+   }
+
        pw_filter_add_port(controller.filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                           pw_properties_new(PW_KEY_FORMAT_DSP, "control:f32", PW_KEY_PORT_NAME,
                                             "fakeport", NULL),
                           NULL, 0);
 
 
-   if (pw_filter_connect(controller.filter, PW_FILTER_FLAG_DRIVER, NULL, 0) < 0) {
-      fprintf(stderr, "can't connect\n");
-      return;
-   }
 
    pw_thread_loop_start(controller.master_loop);
 

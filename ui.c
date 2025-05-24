@@ -5,7 +5,7 @@
 #include <pipewire/filter.h>
 #include <suil/suil.h>
 
-#include "constants.h"
+#include "utils/constants.h"
 #include "engine_data.h"
 #include "ports.h"
 
