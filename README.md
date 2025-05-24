@@ -9,5 +9,4 @@ Pipewire is a great fit for implementing an lv2 host.
 
 Code
 
-![Alt text](./elvira.svg)
 <img src="./elvira.svg">
