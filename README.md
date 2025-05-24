@@ -20,7 +20,7 @@ pipewire contains a CLI tool (pw-cli send-command ...) which could be used to se
 
 The first two of these operations are targeted towards the Controller, and this is the reason for the Controller being a pipewire node. The remaining operations are targeted towards a specifc Engine and addressed to the Engine's pipewire node. (Some of these commands do not exist in the currently available codebase, but they will be in the near future).
 
-<img src="./elvira.svg">
+<img src="./docs/img/elvira.svg">
 
 One of the key aspects of hosting an lv2 host function in a pipewire environment, is the mapping between the lv2 ports of the plugin instances and the ports of the pipewire nodes. On some type of ports, namely Audio ports, this mapping is very easy to achieve, mostly due to similar semantics and implementation strategies. 
 
