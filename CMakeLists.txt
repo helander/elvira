@@ -35,18 +35,18 @@ pkg_check_modules(LILV REQUIRED lilv-0)
 pkg_check_modules(SUIL REQUIRED suil-0)
 
 add_executable(elvira
-    elvira.c
-    utils/constants.c
-    utils/cJSON.c
-    enginegroup.c
-    controller.c
-    utils/stb_ds.c
-    engine.c
-    ports.c
-    host.c
-    pwfilter.c
-    ui.c
-    utils/util.c
+    src/elvira.c
+    src/enginegroup.c
+    src/controller.c
+    src/engine.c
+    src/ports.c
+    src/host.c
+    src/pwfilter.c
+    src/ui.c
+    src/utils/constants.c
+    src/utils/cJSON.c
+    src/utils/stb_ds.c
+    src/utils/util.c
 )
 
 target_include_directories(elvira PRIVATE
