@@ -2,6 +2,7 @@
 #include "engine.h"
 
 #include <spa/debug/types.h>
+#include <spa/pod/iter.h>
 #include "engine_data.h"
 #include "ui.h"
 #include "host.h"
@@ -85,12 +86,15 @@ static void on_process(void *userdata, struct spa_io_position *position) {
 
 static void on_command(void *data, const struct spa_command *command) {
    Engine *engine = (Engine *)data;
-   printf("\n oncom start  [%s] engine type %d  id %d", engine->enginename,command->body.body.type,command->body.body.id);
-   fflush(stdout);
-   uint32_t id = SPA_NODE_COMMAND_ID(command);
-   if (id == SPA_NODE_COMMAND_User) {
-      uint8_t *p = (uint8_t *)command;
-      char *command_string = p + 32;
+   if (SPA_NODE_COMMAND_ID(command) == SPA_NODE_COMMAND_User) {
+      if (SPA_POD_TYPE(&command->pod) == SPA_TYPE_Object) {
+         const struct spa_pod_object *obj = (const struct spa_pod_object *) &command->pod;
+         struct spa_pod_prop *prop;
+         SPA_POD_OBJECT_FOREACH(obj, prop) {
+             if (prop->key == SPA_COMMAND_NODE_extra) {
+                const struct spa_pod *value = &prop->value;
+                if (SPA_POD_TYPE(value) == SPA_TYPE_String) {
+                   const char *command_string = SPA_POD_BODY(value);
 
       printf("\nCommand---[%s]", command_string);
 
@@ -102,16 +106,14 @@ static void on_command(void *data, const struct spa_command *command) {
          printf("\nUnknown command [%s]", command_string);
       }
 
-   } else {
-      printf("\ngot id %d (%s)", id, spa_debug_type_find_name(spa_type_node_command_id, id));
+                }
+             }
+         }
+      }
    }
-   // dump("pod",&command->pod,command->pod.size+64);
-   // print_command(&command->pod);
-   printf("\n oncom end  [%s] engine %lx  filter %lx", engine->enginename, engine, engine->pw.filter);
-   fflush(stdout);
+} 
 
-   fflush(stdout);
-}
+
 
 static void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa_pod *param) {
    printf("\nParam changed type %d  size %d", param->type, param->size);
@@ -139,24 +141,17 @@ void engine_defaults(Engine *engine) {
    engine->plugin_uri[0] = 0;
    engine->preset_uri[0] = 0;
    engine->host.start_ui = true;
-   engine->host.worker_loop = false;
-   engine->host.engine_worker_loop = false;
    engine->pw.samplerate = 48000;
-   engine->pw.latency_period = 256;
+   engine->pw.latency_period = 512;
 }
 
 #if 0
 void node_destroy(struct node_data *node) {
    printf("\nTermination of node [%s]", node->nodename);
    fflush(stdout);
-   int separate_worker_loop = node->pw.worker_loop != node->pw.node_loop;
    pw_thread_loop_destroy(node->pw.node_loop);
-   if (separate_worker_loop) {
-      pw_thread_loop_destroy(node->pw.worker_loop);
-   }
 
    node->pw.node_loop = NULL;
-   node->pw.worker_loop = NULL;
    node->pw.filter = NULL;
    node->nodename[0] = 0;
    node->plugin_uri[0] = 0;
@@ -174,9 +169,8 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    engine->pw.filter = NULL;
    engine->host.lilv_preset = NULL;
    engine->host.suil_instance = NULL;
-//   engine->pw.engine_loop = pw_thread_loop_new("engine", NULL);
-   engine->pw.engine_loop = engine->pw.master_loop;
-   engine->pw.worker_loop = engine->pw.engine_loop;
+   engine->pw.engine_loop = pw_thread_loop_new("engine", NULL);
+//   engine->pw.engine_loop = engine->pw.master_loop;
    pw_thread_loop_start(engine->pw.engine_loop);
 
    printf("\nStarting engine %s in group %s",engine->enginename, engine->groupname);fflush(stdout);

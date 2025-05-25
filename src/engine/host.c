@@ -65,7 +65,7 @@ static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uin
    Engine *engine = (Engine *)handle;
    // printf("\nHost: schedule_work()");fflush(stdout);
    //  Fire execution of on_worker in loop thread
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.worker_loop), on_worker, 0, data, size, false,
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_worker, 0, data, size, false,
                   engine);
    return LV2_WORKER_SUCCESS;
 }

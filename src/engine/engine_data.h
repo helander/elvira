@@ -7,8 +7,8 @@
 #include <pipewire/filter.h>
 #include <pipewire/pipewire.h>
 #include <spa/utils/ringbuffer.h>
-//#include <stdint.h>
-//#include <stdbool.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <suil/suil.h>
 
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
@@ -23,7 +23,6 @@ struct port_data;
 struct pw_data {
    struct pw_thread_loop *master_loop;
    struct pw_thread_loop *engine_loop;
-   struct pw_thread_loop *worker_loop;
    struct pw_filter *filter;
    int64_t clock_time;
    int connected;
@@ -46,8 +45,6 @@ struct lv2_data {
    struct spa_ringbuffer work_response_ring;
    uint8_t work_response_buffer[WORK_RESPONSE_RINGBUFFER_SIZE];
    int32_t block_length;
-   bool worker_loop;
-   bool engine_worker_loop;
    bool start_ui;
    SuilInstance *suil_instance;
 };

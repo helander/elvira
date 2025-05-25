@@ -1,14 +1,15 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
    char *name;
    char *plugin;
    char *preset;
    bool showui;
-   bool worker;
-   bool engineworker;
+   uint32_t samplerate;
+   uint32_t latency;
 } EngineSpec;
 
 typedef struct {

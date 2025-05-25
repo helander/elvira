@@ -42,17 +42,14 @@ void controller_add(EngineGroup *enginegroup) {
       printf("    Plugin: %s\n", enginegroup->engines[i].plugin);
       printf("    Preset: %s\n", enginegroup->engines[i].preset);
       printf("    Showui: %s\n", enginegroup->engines[i].showui ? "true" : "false");
-      printf("    Worker: %s\n", enginegroup->engines[i].worker ? "true" : "false");
-      printf("    Engineworker: %s\n", enginegroup->engines[i].engineworker ? "true" : "false");
        Engine *engine  = (Engine *) calloc(1, sizeof(Engine));
        engine_defaults(engine);
        engine->host.start_ui = enginegroup->engines[i].showui;
-       engine->host.worker_loop = enginegroup->engines[i].worker;
-       engine->host.engine_worker_loop = enginegroup->engines[i].engineworker;
        strcpy(engine->groupname,enginegroup->group);
        strcpy(engine->enginename,enginegroup->engines[i].name);
        strcpy(engine->plugin_uri,enginegroup->engines[i].plugin);
-       if (enginegroup->engines[i].preset) strcpy(engine->preset_uri,enginegroup->engines[i].preset);
+       if (enginegroup->engines[i].samplerate) engine->pw.samplerate = enginegroup->engines[i].samplerate;
+       if (enginegroup->engines[i].latency) engine->pw.latency_period = enginegroup->engines[i].latency;
       arrput(controller.engines, *engine);
    }
    if (!strlen(controller.master_group)) 

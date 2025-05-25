@@ -32,15 +32,15 @@ EngineGroup *enginegroup_parse(char *jsonstring) {
          cJSON *plugin = cJSON_GetObjectItem(engine, "plugin");
          cJSON *preset = cJSON_GetObjectItem(engine, "preset");
          cJSON *showui = cJSON_GetObjectItem(engine, "showui");
-         cJSON *worker = cJSON_GetObjectItem(engine, "worker");
-         cJSON *engineworker = cJSON_GetObjectItem(engine, "engineworker");
+         cJSON *samplerate = cJSON_GetObjectItem(engine, "samplerate");
+         cJSON *latency = cJSON_GetObjectItem(engine, "latency");
 
          if (cJSON_IsString(name)) enginegroup->engines[i].name = strdup(name->valuestring);
          if (cJSON_IsString(plugin)) enginegroup->engines[i].plugin = strdup(plugin->valuestring);
          if (cJSON_IsString(preset)) enginegroup->engines[i].preset = strdup(preset->valuestring);
          if (cJSON_IsBool(showui)) enginegroup->engines[i].showui = cJSON_IsTrue(showui);
-         if (cJSON_IsBool(worker)) enginegroup->engines[i].worker = cJSON_IsTrue(worker);
-         if (cJSON_IsBool(engineworker)) enginegroup->engines[i].engineworker = cJSON_IsTrue(engineworker);
+         if (cJSON_IsNumber(samplerate)) enginegroup->engines[i].samplerate = samplerate->valueint;
+         if (cJSON_IsNumber(latency)) enginegroup->engines[i].latency = latency->valueint;
       }
    }
 
