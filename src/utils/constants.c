@@ -1,11 +1,8 @@
 #include "constants.h"
 
 #include <lilv/lilv.h>
-#include <lv2/core/lv2.h>
 #include <lv2/patch/patch.h>
 #include <lv2/presets/presets.h>
-#include <lv2/state/state.h>
-#include <lv2/urid/urid.h>
 #include <pipewire/pipewire.h>
 
 struct constants constants;

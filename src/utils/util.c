@@ -1,16 +1,8 @@
-// #include "ports.h"
-
 #include <lv2/atom/atom.h>
-// #include <lv2/atom/util.h>
-// #include <lv2/ui/ui.h>
 #include <lv2/urid/urid.h>
-// #include <spa/control/control.h>
-// #include <spa/control/ump-utils.h>
-// #include <spa/pod/builder.h>
 #include <stdio.h>
 
 #include "constants.h"
-// #include "node_data.h"
 
 void util_print_atom(const LV2_Atom *atom) {
    if (atom->type != 0) {

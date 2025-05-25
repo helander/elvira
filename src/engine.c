@@ -1,19 +1,8 @@
+
 #include "engine.h"
 
-#include <lilv/lilv.h>
 #include <spa/debug/types.h>
-#include <spa/param/latency-utils.h>
-#include <spa/param/props.h>
-#include <spa/pod/builder.h>
-#include <spa/pod/dynamic.h>
-#include <spa/pod/parser.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "utils/constants.h"
 #include "engine_data.h"
-#include "ports.h"
-//#include "program.h"
 #include "ui.h"
 #include "host.h"
 #include "pwfilter.h"

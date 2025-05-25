@@ -1,11 +1,7 @@
 #include <gtk/gtk.h>
 #include <pipewire/pipewire.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-//#include "cJSON.h"
 #include "utils/constants.h"
 #include "enginegroup.h"
 #include "controller.h"

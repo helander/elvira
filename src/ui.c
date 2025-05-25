@@ -2,7 +2,6 @@
 #include <lilv/lilv.h>
 #include <lv2/instance-access/instance-access.h>
 #include <lv2/ui/ui.h>
-#include <pipewire/filter.h>
 #include <suil/suil.h>
 
 #include "utils/constants.h"

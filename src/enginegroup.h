@@ -1,5 +1,4 @@
-#ifndef ENGINEGROUP_H
-#define ENGINEGROUP_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -21,4 +20,3 @@ typedef struct {
 extern EngineGroup *enginegroup_parse(char *jsonstring);
 extern void enginegroup_free(EngineGroup *group);
 
-#endif
