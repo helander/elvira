@@ -4,7 +4,7 @@
 #include <lv2/ui/ui.h>
 #include <suil/suil.h>
 
-#include "utils/constants.h"
+#include "constants.h"
 #include "engine_data.h"
 #include "ports.h"
 

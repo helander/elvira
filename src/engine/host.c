@@ -4,21 +4,11 @@
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
 #include <lilv/lilv.h>
-//#include <spa/debug/types.h>
-//#include <spa/param/latency-utils.h>
-//#include <spa/param/props.h>
-//#include <spa/pod/builder.h>
-//#include <spa/pod/dynamic.h>
-//#include <spa/pod/parser.h>
 #include <stdio.h>
-//#include <string.h>
 
-#include "utils/constants.h"
+#include "constants.h"
 #include "engine_data.h"
 #include "ports.h"
-//#include "program.h"
-//#include "ui.h"
-//#include "group.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},

@@ -36,13 +36,13 @@ pkg_check_modules(SUIL REQUIRED suil-0)
 
 add_executable(elvira
     src/elvira.c
-    src/enginegroup.c
-    src/controller.c
-    src/engine.c
-    src/ports.c
-    src/host.c
-    src/pwfilter.c
-    src/ui.c
+    src/enginegroup/enginegroup.c
+    src/controller/controller.c
+    src/engine/engine.c
+    src/engine/ports.c
+    src/engine/host.c
+    src/engine/pwfilter.c
+    src/engine/ui.c
     src/utils/constants.c
     src/utils/cJSON.c
     src/utils/stb_ds.c
@@ -55,6 +55,10 @@ target_include_directories(elvira PRIVATE
     ${GTK3_INCLUDE_DIRS}
     ${LILV_INCLUDE_DIRS}
     ${SUIL_INCLUDE_DIRS}
+    src/enginegroup
+    src/controller
+    src/engine
+    src/utils
 )
 
 target_link_libraries(elvira PRIVATE

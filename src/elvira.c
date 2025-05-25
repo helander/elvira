@@ -4,7 +4,7 @@
 
 #include "utils/constants.h"
 #include "enginegroup.h"
-#include "controller.h"
+#include "controller/controller.h"
 
 char *read_stdin_to_string(void) {
    size_t size = 4096, len = 0;

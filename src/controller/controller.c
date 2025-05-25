@@ -6,7 +6,7 @@
 
 #include "enginegroup.h"
 
-#include "utils/stb_ds.h"
+#include "stb_ds.h"
 
 #include "engine_data.h"
 #include "engine.h"
