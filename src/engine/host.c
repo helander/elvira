@@ -125,6 +125,45 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    return 0;
 }
 
+int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
+                     void *user_data) {
+   Engine *engine = (Engine *)user_data;
+   char *preset_uri = (char *)data;
+
+   if (strlen(preset_uri)) {
+      printf("\nAttempt to save preset %s.", preset_uri);
+      fflush(stdout);
+/*
+      engine->host.lilv_preset = lilv_new_uri(constants.world, preset_uri);
+
+      if (engine->host.lilv_preset) {
+         lilv_world_load_resource(constants.world, engine->host.lilv_preset);
+         LilvState *state =
+             lilv_state_new_from_world(constants.world, &constants.map, engine->host.lilv_preset);
+         if (state) {
+            // printf("\nSTATE: %s\n",lilv_state_to_string(constants.world,
+            // &constants.map, &constants.unmap, state, "http://mystate",
+            // NULL));fflush(stdout);
+            LV2_Feature urid_feature = {
+                .URI = LV2_URID__map,
+                .data = &constants.map,
+            };
+            const LV2_Feature *features[] = {&urid_feature, NULL};
+
+            lilv_state_restore(state, engine->host.instance, NULL, NULL, 0, features);
+         } else {
+            printf("\nNo preset to load.");
+            fflush(stdout);
+         }
+      } else {
+         printf("\nNo preset specified.");
+         fflush(stdout);
+      }
+*/
+   }
+   return -1;
+}
+
 int host_setup(Engine *engine) {
    load_plugin(engine);
    {

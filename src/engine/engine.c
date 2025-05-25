@@ -102,6 +102,9 @@ static void on_command(void *data, const struct spa_command *command) {
       if (sscanf(command_string, "preset %s", uri) == 1) {
          pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0, uri, strlen(uri) + 1,
                         false, engine);
+      } if (sscanf(command_string, "save %s", uri) == 1) {
+         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_save, 0, uri, strlen(uri) + 1,
+                        false, engine);
       } else {
          printf("\nUnknown command [%s]", command_string);
       }
