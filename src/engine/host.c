@@ -95,6 +95,7 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    Engine *engine = (Engine *)user_data;
 
    char *preset_uri = (char *)data;
+   printf("\nhost_on_preset  %s %s.", engine->enginename, preset_uri);
 
    if (strlen(preset_uri)) {
       printf("\nAttempt to apply preset %s.", preset_uri);
@@ -154,26 +155,39 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       fflush(stdout);
 
 
-            LV2_Feature urid_feature = {
-                .URI = LV2_URID__map,
-                .data = &constants.map,
-            };
-            const LV2_Feature *features[] = {&urid_feature, NULL};
+            const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature,  NULL};
 
+
+
+printf("plugin:        %p\n", (void*)engine->host.lilvPlugin);
+printf("instance:      %p\n", (void*)engine->host.instance);
+printf("handle:        %p\n", lilv_instance_get_handle(engine->host.instance));
+printf("map:           %p\n", (void*)&constants.map);
+printf("map.handle:           %p\n", (void*)constants.map.handle);
+printf("map.map:           %p\n", (void*)constants.map.map);
+printf("unmap:           %p\n", (void*)&constants.unmap);
+printf("umap.handle:           %p\n", (void*)constants.unmap.handle);
+printf("umap.unmap:           %p\n", (void*)constants.unmap.unmap);
+printf("features:      %p\n", (void*)features);
+
+assert(urid_support->map_iface.handle != NULL);
+assert(urid_support->map_iface.map != NULL);
+
+fflush(stdout);
 
     // Skapa preset state
     LilvState* state = lilv_state_new_from_instance(
         engine->host.lilvPlugin,
         lilv_instance_get_handle(engine->host.instance),
         &constants.map,
-        "/tmp/elvscratch",  // arbetskatalog
-        "/tmp/elvcopy",  // arbetskatalog
-        "/tmp/elvlink",  // arbetskatalog
-        "/tmp/elvsave",  // arbetskatalog
+        ".",  // arbetskatalog
+        NULL,  // arbetskatalog
+        NULL,  // arbetskatalog
+        NULL,  // arbetskatalog
         get_pott_value,
         engine,
         LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
-        NULL
+        features
     );
     printf("\nstate %lx",state);fflush(stdout);
 

@@ -190,9 +190,10 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    lilv_instance_activate(engine->host.instance); //create host_activate() and call it?
 
    //embed this in a function host_apply_preset (can we make host indep of engine and only engine->host, we could then pass loop with the call)
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0, engine->preset_uri,
-                  sizeof(engine->preset_uri), false, engine);
-
+   if (strlen(engine->preset_uri)) {
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0, engine->preset_uri,
+                  strlen(engine->preset_uri), false, engine);
+   }
    printf("\nStartup done for engine [%s]", engine->enginename);
    fflush(stdout);
 }

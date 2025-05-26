@@ -100,6 +100,9 @@ void controller_add(EngineGroup *enginegroup) {
        strcpy(engine->groupname,enginegroup->group);
        strcpy(engine->enginename,enginegroup->engines[i].name);
        strcpy(engine->plugin_uri,enginegroup->engines[i].plugin);
+       if (enginegroup->engines[i].preset) {
+          strcpy(engine->preset_uri,enginegroup->engines[i].preset);
+       }
        if (enginegroup->engines[i].samplerate) engine->pw.samplerate = enginegroup->engines[i].samplerate;
        if (enginegroup->engines[i].latency) engine->pw.latency_period = enginegroup->engines[i].latency;
       arrput(controller.engines, *engine);
