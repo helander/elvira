@@ -13,11 +13,11 @@ typedef struct {
 } EngineSpec;
 
 typedef struct {
-   char *group;
+   char *name;
    EngineSpec *engines;
    int engine_count;
-} EngineGroup;
+} EngineSet;
 
-extern EngineGroup *enginegroup_parse(const char *jsonstring);
-extern void enginegroup_free(EngineGroup *group);
+extern EngineSet  *engineset_parse(const char *jsonstring);
+extern void engineset_free(EngineSet *set);
 

@@ -25,7 +25,7 @@ int pwfilter_setup(Engine *engine) {
        pw_filter_new_simple(pw_thread_loop_get_loop(engine->pw.engine_loop), engine->enginename,
                             pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY,
                                               "Filter", PW_KEY_MEDIA_ROLE, "DSP", PW_KEY_MEDIA_NAME,
-                                              engine->groupname, PW_KEY_NODE_LATENCY, latency,
+                                              engine->setname, PW_KEY_NODE_LATENCY, latency,
                                               PW_KEY_NODE_ALWAYS_PROCESS, "true",  NULL),
                             &engine_filter_events, engine);
 

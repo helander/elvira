@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "enginegroup.h"
+#include "set.h"
 
 #include "stb_ds.h"
 
@@ -19,7 +19,7 @@ typedef struct {
    struct pw_thread_loop *master_loop;
    struct pw_filter *filter;
    Engine* engines;
-   char master_group[100];
+   char master_set[100];
 } Controller;
 
 static Controller controller;
@@ -52,10 +52,10 @@ static void on_command(void *data, const struct spa_command *command) {
       if (strncmp(command_string,"add ", 4) == 0) {
          json = command_string + 4;
          printf("\nAdd command [%s]", json);
-         EngineGroup *engines = enginegroup_parse(json);
+         EngineSet *engines = engineset_parse(json);
          if (engines) {
              controller_add(engines);
-             enginegroup_free(engines);
+             engineset_free(engines);
              run_engines();
          }
       } else {
@@ -83,40 +83,40 @@ static const struct pw_filter_events controller_events = {
 
 void controller_init() {
   controller.engines = NULL;
-  controller.master_group[0] = 0;
+  controller.master_set[0] = 0;
 }
 
-void controller_add(EngineGroup *enginegroup) {
-   printf("\nGroup: \"%s\"", enginegroup->group);
-   for (int i = 0; i < enginegroup->engine_count; ++i) {
-      printf("\n  Engine: %s", enginegroup->engines[i].name);
-      printf("\n    Plugin: %s", enginegroup->engines[i].plugin);
-      printf("\n    Preset: %s", enginegroup->engines[i].preset);
-      printf("\n    Showui: %s", enginegroup->engines[i].showui ? "true" : "false");
+void controller_add(EngineSet *engineset) {
+   printf("\nSet: \"%s\"", engineset->name);
+   for (int i = 0; i < engineset->engine_count; ++i) {
+      printf("\n  Engine: %s", engineset->engines[i].name);
+      printf("\n    Plugin: %s", engineset->engines[i].plugin);
+      printf("\n    Preset: %s", engineset->engines[i].preset);
+      printf("\n    Showui: %s", engineset->engines[i].showui ? "true" : "false");
        Engine *engine  = (Engine *) calloc(1, sizeof(Engine));
        engine->started = false;
        engine_defaults(engine);
-       engine->host.start_ui = enginegroup->engines[i].showui;
-       strcpy(engine->groupname,enginegroup->group);
-       strcpy(engine->enginename,enginegroup->engines[i].name);
-       strcpy(engine->plugin_uri,enginegroup->engines[i].plugin);
-       if (enginegroup->engines[i].preset) {
-          strcpy(engine->preset_uri,enginegroup->engines[i].preset);
+       engine->host.start_ui = engineset->engines[i].showui;
+       strcpy(engine->setname,engineset->name);
+       strcpy(engine->enginename,engineset->engines[i].name);
+       strcpy(engine->plugin_uri,engineset->engines[i].plugin);
+       if (engineset->engines[i].preset) {
+          strcpy(engine->preset_uri,engineset->engines[i].preset);
        }
-       if (enginegroup->engines[i].samplerate) engine->pw.samplerate = enginegroup->engines[i].samplerate;
-       if (enginegroup->engines[i].latency) engine->pw.latency_period = enginegroup->engines[i].latency;
+       if (engineset->engines[i].samplerate) engine->pw.samplerate = engineset->engines[i].samplerate;
+       if (engineset->engines[i].latency) engine->pw.latency_period = engineset->engines[i].latency;
       arrput(controller.engines, *engine);
    }
    fflush(stdout);
-   if (!strlen(controller.master_group)) 
-      strncpy(controller.master_group,enginegroup->group,sizeof(controller.master_group)-1); 
+   if (!strlen(controller.master_set)) 
+      strncpy(controller.master_set,engineset->name,sizeof(controller.master_set)-1); 
 }
 
 
 void controller_start() {
    controller.master_loop = pw_thread_loop_new("master", NULL);
 
-   controller.filter = pw_filter_new_simple(pw_thread_loop_get_loop(controller.master_loop), controller.master_group,
+   controller.filter = pw_filter_new_simple(pw_thread_loop_get_loop(controller.master_loop), controller.master_set,
                             pw_properties_new(PW_KEY_MEDIA_TYPE, "elvira", PW_KEY_MEDIA_ROLE, "controller", PW_KEY_MEDIA_NAME, "controller", NULL),
                             &controller_events, &controller);
 

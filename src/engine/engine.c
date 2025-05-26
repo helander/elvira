@@ -140,7 +140,7 @@ const struct pw_filter_events engine_filter_events = {
 
 
 void engine_defaults(Engine *engine) {
-   engine->groupname[0] = 0;
+   engine->setname[0] = 0;
    engine->enginename[0] = 0;
    engine->plugin_uri[0] = 0;
    engine->preset_uri[0] = 0;
@@ -171,7 +171,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    Engine *engine = (Engine *)user_data;
 
    if (engine->started) {
-     printf("\nAlready started engine %s in group %s",engine->enginename, engine->groupname);fflush(stdout);
+     printf("\nAlready started engine %s in group %s",engine->enginename, engine->setname);fflush(stdout);
      return 0;
    }
    engine->started = true;
@@ -182,7 +182,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
 //   engine->pw.engine_loop = engine->pw.master_loop;
    pw_thread_loop_start(engine->pw.engine_loop);
 
-   printf("\nStarting engine %s in group %s",engine->enginename, engine->groupname);fflush(stdout);
+   printf("\nStarting engine %s in group %s",engine->enginename, engine->setname);fflush(stdout);
 
    host_setup(engine);
    pwfilter_setup(engine);

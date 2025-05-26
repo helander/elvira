@@ -111,7 +111,7 @@ struct port_data {
 
 struct engine_data {
    bool started;
-   char groupname[50];
+   char setname[50];
    char enginename[50];
    char plugin_uri[200];
    char preset_uri[200];

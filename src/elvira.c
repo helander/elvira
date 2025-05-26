@@ -3,11 +3,11 @@
 #include <stdio.h>
 
 #include "utils/constants.h"
-#include "enginegroup.h"
+#include "set.h"
 #include "controller/controller.h"
 
 
-static char *empty_group = "{\"group\": \"\", \"engines\": []}";
+static char *empty_set = "{\"set\": \"\", \"engines\": []}";
 
 char *read_stream_to_string(FILE *stream) {
    if (!stream) return NULL;
@@ -55,16 +55,16 @@ int main(int argc, char **argv) {
    }
 
    if (json_text == NULL) {
-     fprintf(stderr, "\nNo file content available, use empty group.");
-     json_text = empty_group;
+     fprintf(stderr, "\nNo file content available, use empty set.");
+     json_text = empty_set;
    }
 
-   EngineGroup *engines = enginegroup_parse(json_text);
-   if (json_text != empty_group) free(json_text);
+   EngineSet *engines = engineset_parse(json_text);
+   if (json_text != empty_set) free(json_text);
 
    if (engines) {
      controller_add(engines);
-     enginegroup_free(engines);
+     engineset_free(engines);
      controller_start();
      gtk_main();
      pw_deinit();
