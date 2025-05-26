@@ -18,6 +18,6 @@ typedef struct {
    int engine_count;
 } EngineGroup;
 
-extern EngineGroup *enginegroup_parse(char *jsonstring);
+extern EngineGroup *enginegroup_parse(const char *jsonstring);
 extern void enginegroup_free(EngineGroup *group);
 

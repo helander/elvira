@@ -6,12 +6,16 @@
 #include "enginegroup.h"
 #include "controller/controller.h"
 
-char *read_stdin_to_string(void) {
+
+static char *empty_group = "{\"group\": \"\", \"engines\": []}";
+
+char *read_stream_to_string(FILE *stream) {
+   if (!stream) return NULL;
    size_t size = 4096, len = 0;
    char *data = malloc(size);
    if (!data) return NULL;
    int c;
-   while ((c = fgetc(stdin)) != EOF) {
+   while ((c = fgetc(stream)) != EOF) {
       if (len + 1 >= size) {
          size *= 2;
          char *new_data = realloc(data, size);
@@ -59,14 +63,30 @@ int main(int argc, char **argv) {
    constants_init();
    controller_init();
 
-   char *json_text = read_stdin_to_string();
-   if (!json_text) {
-      fprintf(stderr, "Failed to read json input from stdin.\n");
-      return 1;
+   FILE *jsonfile = NULL;
+   if (argc > 1) {
+      fprintf(stderr, "\nOpen file %s", argv[1]);
+      jsonfile = fopen(argv[1], "r");
+   } else {
+      fprintf(stderr, "\nOpen default file (elvira.json)");
+      jsonfile = fopen("elvira.json", "r");
+   }
+
+   char *json_text = NULL;
+
+   if (jsonfile == NULL) {
+      perror("\nNo file available:");
+   } else {
+     json_text = read_stream_to_string(jsonfile);
+   }
+
+   if (json_text == NULL) {
+     fprintf(stderr, "\nNo file content available, use empty group.");
+     json_text = empty_group;
    }
 
    EngineGroup *engines = enginegroup_parse(json_text);
-   free(json_text);
+   if (json_text != empty_group) free(json_text);
 
    if (engines) {
      controller_add(engines);

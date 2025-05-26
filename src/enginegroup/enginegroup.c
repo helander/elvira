@@ -12,7 +12,7 @@ void enginegroup_free(EngineGroup *group) {
    free(group->engines);
 }
 
-EngineGroup *enginegroup_parse(char *jsonstring) {
+EngineGroup *enginegroup_parse(const char *jsonstring) {
    cJSON *cjson = cJSON_Parse(jsonstring);
    if (!cjson) return NULL;
 
@@ -21,6 +21,7 @@ EngineGroup *enginegroup_parse(char *jsonstring) {
    cJSON *group = cJSON_GetObjectItem(cjson, "group");
    if (cJSON_IsString(group)) enginegroup->group = strdup(group->valuestring);
 
+   enginegroup->engine_count = 0;
    cJSON *engines = cJSON_GetObjectItem(cjson, "engines");
    if (cJSON_IsArray(engines)) {
       int n_engines = cJSON_GetArraySize(engines);

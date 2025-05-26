@@ -110,6 +110,7 @@ struct port_data {
 };
 
 struct engine_data {
+   bool started;
    char groupname[50];
    char enginename[50];
    char plugin_uri[200];

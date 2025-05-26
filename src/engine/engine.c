@@ -11,6 +11,7 @@
 
 
 static void on_process(void *userdata, struct spa_io_position *position) {
+//printf("   ONP   ");fflush(stdout);
    Engine *engine = userdata;
 
    if (!engine->pw.connected) {
@@ -169,6 +170,11 @@ void node_destroy(struct node_data *node) {
 int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size, void *user_data) {
    Engine *engine = (Engine *)user_data;
 
+   if (engine->started) {
+     printf("\nAlready started engine %s in group %s",engine->enginename, engine->groupname);fflush(stdout);
+     return 0;
+   }
+   engine->started = true;
    engine->pw.filter = NULL;
    engine->host.lilv_preset = NULL;
    engine->host.suil_instance = NULL;

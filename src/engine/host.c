@@ -3,8 +3,10 @@
 #include <pipewire/pipewire.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
+#include <lv2/state/state.h>
 #include <lilv/lilv.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "constants.h"
 #include "engine_data.h"
@@ -91,6 +93,7 @@ static void load_plugin(Engine *engine) {
 int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                      void *user_data) {
    Engine *engine = (Engine *)user_data;
+
    char *preset_uri = (char *)data;
 
    if (strlen(preset_uri)) {
@@ -125,14 +128,111 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    return 0;
 }
 
+static float xyz = 25.3;
+
+static const void*
+get_pott_value(const char* port_symbol,
+               void*       user_data,
+               uint32_t*   size,
+               uint32_t*   type)
+{
+  Engine* const engine = (Engine*)user_data;
+    *size = sizeof(float);
+    *type = constants.forge.Float;
+    return &xyz;
+}
+
 int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                      void *user_data) {
    Engine *engine = (Engine *)user_data;
    char *preset_uri = (char *)data;
 
+
+
    if (strlen(preset_uri)) {
       printf("\nAttempt to save preset %s.", preset_uri);
       fflush(stdout);
+
+
+            LV2_Feature urid_feature = {
+                .URI = LV2_URID__map,
+                .data = &constants.map,
+            };
+            const LV2_Feature *features[] = {&urid_feature, NULL};
+
+
+    // Skapa preset state
+    LilvState* state = lilv_state_new_from_instance(
+        engine->host.lilvPlugin,
+        lilv_instance_get_handle(engine->host.instance),
+        &constants.map,
+        "/tmp/elvscratch",  // arbetskatalog
+        "/tmp/elvcopy",  // arbetskatalog
+        "/tmp/elvlink",  // arbetskatalog
+        "/tmp/elvsave",  // arbetskatalog
+        get_pott_value,
+        engine,
+        LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
+        NULL
+    );
+    printf("\nstate %lx",state);fflush(stdout);
+
+/*
+LilvState *lilv_state_new_from_instance(
+const LilvPlugin *plugin,
+ LilvInstance *instance, 
+LV2_URID_Map *map,
+ const char *scratch_dir, 
+const char *copy_dir, 
+const char *link_dir, 
+const char *save_dir, 
+LilvGetPortValueFunc get_value, 
+void *user_data,
+ uint32_t flags,
+ const LV2_Feature *const *features)
+*/
+
+    if (!state) {
+        fprintf(stderr, "Failed to create state\n");
+        return -1;
+    }
+
+
+    // Spara till filsystem
+    lilv_state_save(
+        constants.world,
+        &constants.map,
+        &constants.unmap,
+        state,
+        preset_uri,
+        "~/.lv2/presets",  // katalog
+        NULL
+    );
+
+/*
+int lilv_state_save(
+LilvWorld *world,
+ LV2_URID_Map *map,
+ LV2_URID_Unmap *unmap,
+ const LilvState *state,
+ const char *uri,
+ const char *dir,
+ const char *filename
+)
+
+*/
+
+
+    printf("Preset saved to ./presets with URI: %s\n", preset_uri);
+    lilv_state_free(state);
+  }
+    return 0;
+}
+
+
+
+
+
 /*
       engine->host.lilv_preset = lilv_new_uri(constants.world, preset_uri);
 
@@ -160,9 +260,6 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
          fflush(stdout);
       }
 */
-   }
-   return -1;
-}
 
 int host_setup(Engine *engine) {
    load_plugin(engine);
