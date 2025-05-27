@@ -41,3 +41,32 @@ Luckily, for many cases it is enough to manage this via the command mention abov
 
 The *pipewire Control ports* are similar in nature to the *lv2 Atom ports*. This is especially true for carrying of *Midi* messages. .........
 
+
+Operation
+---------
+Start the program using the program name *elvira*
+
+$ elvira
+
+This will start a program with a controller but no engines (unless you have a default config file - see below).
+
+elvira is primarily controlled by a json formatted configuration file. In order to start elvira with a number of engines, you need to prepare
+a configuration file and give the name of the path on the elvira command line:
+
+$ elvira my_configuration.json
+
+In case you name your configuration file elvira.json and place it in the directory where you start elvira, then it will be used in case you omitt the filename from the command line:
+
+$ elvira
+
+Configuration file format
+-------------------------
+
+
+
+Commands
+--------
+save
+preset
+add (same json format as in configuration files) 
+
