@@ -1,16 +1,15 @@
-#include "host.h"
-
+#include <stdio.h>
+#include <stdint.h>
 #include <pipewire/pipewire.h>
+#include <lilv/lilv.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
 #include <lv2/state/state.h>
-#include <lilv/lilv.h>
-#include <stdio.h>
-#include <stdint.h>
 
 #include "constants.h"
 #include "engine_data.h"
 #include "ports.h"
+#include "host.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
@@ -20,7 +19,7 @@ const LV2_Feature buf_size_features[3] = {
 
 
 
-static LV2_Worker_Status xxx_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
+static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
                                             const void *data) {
    Engine *engine = (Engine *)handle;
    uint16_t len = size;
@@ -41,7 +40,6 @@ static LV2_Worker_Status xxx_worker_respond(LV2_Worker_Respond_Handle handle, co
       if (space >= total_len) {
          memcpy(engine->host.work_response_buffer + ring_offset, temp, total_len);
       } else {
-         // Wrap around
          memcpy(engine->host.work_response_buffer + ring_offset, temp, space);
          memcpy(engine->host.work_response_buffer, temp + space, total_len - space);
       }
@@ -55,18 +53,14 @@ static LV2_Worker_Status xxx_worker_respond(LV2_Worker_Respond_Handle handle, co
 static int on_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                      void *user_data) {
    Engine *engine = (Engine *)user_data;
-   // printf("\nloop_worker");fflush(stdout);
-   LV2_Worker_Status x =
-       engine->host.iface->work(engine->host.handle, xxx_worker_respond, engine, size, data);
-   // printf("\nworker status %d",x);fflush(stdout);
-   return x;
+   LV2_Worker_Status status =
+       engine->host.iface->work(engine->host.handle, the_worker_respond, engine, size, data);
+   return status;
 }
 
 static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uint32_t size,
                                           const void *data) {
    Engine *engine = (Engine *)handle;
-   // printf("\nHost: schedule_work()");fflush(stdout);
-   //  Fire execution of on_worker in loop thread
    pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_worker, 0, data, size, false,
                   engine);
    return LV2_WORKER_SUCCESS;
@@ -95,11 +89,8 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    Engine *engine = (Engine *)user_data;
 
    char *preset_uri = (char *)data;
-   printf("\nhost_on_preset  %s %s.", engine->enginename, preset_uri);
 
    if (strlen(preset_uri)) {
-      printf("\nAttempt to apply preset %s.", preset_uri);
-      fflush(stdout);
       engine->host.lilv_preset = lilv_new_uri(constants.world, preset_uri);
 
       if (engine->host.lilv_preset) {
@@ -107,9 +98,6 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
          LilvState *state =
              lilv_state_new_from_world(constants.world, &constants.map, engine->host.lilv_preset);
          if (state) {
-            // printf("\nSTATE: %s\n",lilv_state_to_string(constants.world,
-            // &constants.map, &constants.unmap, state, "http://mystate",
-            // NULL));fflush(stdout);
             LV2_Feature urid_feature = {
                 .URI = LV2_URID__map,
                 .data = &constants.map,
@@ -146,134 +134,69 @@ get_pott_value(const char* port_symbol,
 int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                      void *user_data) {
    Engine *engine = (Engine *)user_data;
-   char *preset_uri = (char *)data;
+   char *preset_name = (char *)data;
 
 
 
-   if (strlen(preset_uri)) {
-      printf("\nAttempt to save preset %s.", preset_uri);
-      fflush(stdout);
+   if (strlen(preset_name)) {
 
 
             const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature,  NULL};
 
 
-
-printf("plugin:        %p\n", (void*)engine->host.lilvPlugin);
-printf("instance:      %p\n", (void*)engine->host.instance);
-printf("handle:        %p\n", lilv_instance_get_handle(engine->host.instance));
-printf("map:           %p\n", (void*)&constants.map);
-printf("map.handle:           %p\n", (void*)constants.map.handle);
-printf("map.map:           %p\n", (void*)constants.map.map);
-printf("unmap:           %p\n", (void*)&constants.unmap);
-printf("umap.handle:           %p\n", (void*)constants.unmap.handle);
-printf("umap.unmap:           %p\n", (void*)constants.unmap.unmap);
-printf("features:      %p\n", (void*)features);
-
-assert(urid_support->map_iface.handle != NULL);
-assert(urid_support->map_iface.map != NULL);
-
-fflush(stdout);
-
-    // Skapa preset state
+    // Create the preset state
     LilvState* state = lilv_state_new_from_instance(
         engine->host.lilvPlugin,
-        lilv_instance_get_handle(engine->host.instance),
+        engine->host.instance,
         &constants.map,
-        ".",  // arbetskatalog
-        NULL,  // arbetskatalog
-        NULL,  // arbetskatalog
-        NULL,  // arbetskatalog
+        "/tmp/elvira",  
+        NULL,  
+        NULL,  
+        NULL,  
         get_pott_value,
         engine,
         LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
         features
     );
-    printf("\nstate %lx",state);fflush(stdout);
 
-/*
-LilvState *lilv_state_new_from_instance(
-const LilvPlugin *plugin,
- LilvInstance *instance, 
-LV2_URID_Map *map,
- const char *scratch_dir, 
-const char *copy_dir, 
-const char *link_dir, 
-const char *save_dir, 
-LilvGetPortValueFunc get_value, 
-void *user_data,
- uint32_t flags,
- const LV2_Feature *const *features)
-*/
 
     if (!state) {
-        fprintf(stderr, "Failed to create state\n");
+        fprintf(stderr, "\nFailed to create the preset state");
         return -1;
     }
 
+    // Save the created preset on filesystem
+   char preset_uri[200];
+   char preset_dir[200];
+   char preset_ttl[50];
+   char preset_ttl_url[200];
 
-    // Spara till filsystem
+   sprintf(preset_uri,"%s/preset/%s",lilv_node_as_uri(lilv_plugin_get_uri(engine->host.lilvPlugin)),preset_name);
+   sprintf(preset_dir,"/home/soundcan/.lv2/%s",preset_name);
+   sprintf(preset_ttl,"%s.ttl",preset_name);
+   sprintf(preset_ttl_url,"file://%s/%s",preset_dir,preset_ttl);
+
     lilv_state_save(
         constants.world,
         &constants.map,
         &constants.unmap,
         state,
         preset_uri,
-        "~/.lv2/presets",  // katalog
-        NULL
+        preset_dir, 
+        preset_ttl
     );
 
-/*
-int lilv_state_save(
-LilvWorld *world,
- LV2_URID_Map *map,
- LV2_URID_Unmap *unmap,
- const LilvState *state,
- const char *uri,
- const char *dir,
- const char *filename
-)
-
-*/
-
-
-    printf("Preset saved to ./presets with URI: %s\n", preset_uri);
     lilv_state_free(state);
+
+    // Various methods has been tested to make the newly created preset be available without having to restart the program.
+    // The methods below works, but is a bit "brutal". Any other methods that should be tested?
+    lilv_world_load_all(constants.world);
+
+    printf("Preset saved to %s/%s with URI: %s\n", preset_dir, preset_ttl, preset_uri);
+
   }
     return 0;
 }
-
-
-
-
-
-/*
-      engine->host.lilv_preset = lilv_new_uri(constants.world, preset_uri);
-
-      if (engine->host.lilv_preset) {
-         lilv_world_load_resource(constants.world, engine->host.lilv_preset);
-         LilvState *state =
-             lilv_state_new_from_world(constants.world, &constants.map, engine->host.lilv_preset);
-         if (state) {
-            // printf("\nSTATE: %s\n",lilv_state_to_string(constants.world,
-            // &constants.map, &constants.unmap, state, "http://mystate",
-            // NULL));fflush(stdout);
-            LV2_Feature urid_feature = {
-                .URI = LV2_URID__map,
-                .data = &constants.map,
-            };
-            const LV2_Feature *features[] = {&urid_feature, NULL};
-
-            lilv_state_restore(state, engine->host.instance, NULL, NULL, 0, features);
-         } else {
-            printf("\nNo preset to load.");
-            fflush(stdout);
-         }
-      } else {
-         printf("\nNo preset specified.");
-         fflush(stdout);
-      }
-*/
 
 int host_setup(Engine *engine) {
    load_plugin(engine);
