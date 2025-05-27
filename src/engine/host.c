@@ -103,6 +103,8 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
             const LV2_Feature *features[] = {&urid_feature, NULL};
 
             lilv_state_restore(state, engine->host.instance, NULL, NULL, 0, features);
+            printf("\nPreset with URI: %s applied\n", preset_uri);
+            fflush(stdout);
          } else {
             printf("\nNo preset to load.");
             fflush(stdout);
@@ -147,13 +149,9 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       }
 
       char preset_uri[200];
-      //char preset_ttl[50];
-      //char preset_ttl_url[200];
 
       sprintf(preset_uri, "%s/preset/%s",
               lilv_node_as_uri(lilv_plugin_get_uri(engine->host.lilvPlugin)), preset_name);
-      //sprintf(preset_ttl, "%s.ttl", preset_name);
-      //sprintf(preset_ttl_url, "file://%s/%s", preset_dir, preset_ttl);
 
       // Save the created preset on filesystem
       lilv_state_save(constants.world, &constants.map, &constants.unmap, state, preset_uri,
@@ -166,7 +164,7 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       // methods that should be tested?
       lilv_world_load_all(constants.world);
 
-      printf("Preset saved to %s with URI: %s\n", preset_dir, preset_uri);
+      printf("\nPreset saved to %s with URI: %s\n", preset_dir, preset_uri);
    }
    return 0;
 }
