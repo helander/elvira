@@ -180,7 +180,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    //   engine->pw.engine_loop = engine->pw.master_loop;
    pw_thread_loop_start(engine->pw.engine_loop);
 
-   printf("\nStarting engine %s in group %s", engine->enginename, engine->setname);
+   printf("\nStarting engine %s in group %s\n\n", engine->enginename, engine->setname);
    fflush(stdout);
 
    host_setup(engine);
@@ -194,6 +194,5 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0,
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
-   printf("\nStartup done for engine [%s]", engine->enginename);
-   fflush(stdout);
+
 }
