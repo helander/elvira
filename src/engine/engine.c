@@ -94,18 +94,13 @@ static void on_command(void *data, const struct spa_command *command) {
                const struct spa_pod *value = &prop->value;
                if (SPA_POD_TYPE(value) == SPA_TYPE_String) {
                   const char *command_string = SPA_POD_BODY(value);
-
-                  printf("\nCommand---[%s]", command_string);
-
-                  char uri[100];
-                  char preset_name[100];
-                  if (sscanf(command_string, "preset %s", uri) == 1) {
+                  char args[100];
+                  if (sscanf(command_string, "preset %s", args) == 1) {
                      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset,
-                                    0, uri, strlen(uri) + 1, false, engine);
-                  }
-                  if (sscanf(command_string, "save %s", preset_name) == 1) {
+                                    0, args, strlen(args) + 1, false, engine);
+                  } else if (sscanf(command_string, "save %s", args) == 1) {
                      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_save,
-                                    0, preset_name, strlen(preset_name) + 1, false, engine);
+                                    0, args, strlen(args) + 1, false, engine);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
                   }
