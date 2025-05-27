@@ -12,7 +12,6 @@ int pwfilter_setup(Engine *engine) {
 
    sprintf(latency, "%d/%d", engine->pw.latency_period, engine->pw.samplerate);
 
-   engine->pw.connected = 0;
    // Create pw engine loop resources. Lock the engine loop
    pw_thread_loop_lock(engine->pw.engine_loop);
 
@@ -30,7 +29,7 @@ int pwfilter_setup(Engine *engine) {
    params[0] = spa_process_latency_build(
        &b, SPA_PARAM_ProcessLatency, &SPA_PROCESS_LATENCY_INFO_INIT(.ns = 10 * SPA_NSEC_PER_MSEC));
 
-   if (pw_filter_connect(engine->pw.filter, PW_FILTER_FLAG_RT_PROCESS | PW_FILTER_FLAG_DRIVER,
+   if (pw_filter_connect(engine->pw.filter, PW_FILTER_FLAG_RT_PROCESS ,
                          params, 1) < 0) {
       fprintf(stderr, "can't connect\n");
       // pthread_mutex_unlock(&program_lock);

@@ -25,7 +25,6 @@ struct pw_data {
    struct pw_thread_loop *engine_loop;
    struct pw_filter *filter;
    int64_t clock_time;
-   int connected;
    int samplerate;
    int latency_period;
 };

@@ -117,14 +117,20 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    return 0;
 }
 
-static float xyz = 25.3;
 
-static const void *get_pott_value(const char *port_symbol, void *user_data, uint32_t *size,
+static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
                                   uint32_t *type) {
    Engine *const engine = (Engine *)user_data;
-   *size = sizeof(float);
-   *type = constants.forge.Float;
-   return &xyz;
+   for (int n = 0; n < engine->n_ports; n++) {
+      struct port_data *port = &engine->ports[n];
+      if (strcmp(port_symbol,port->name)) continue;
+      *size = sizeof(float);
+      *type = constants.forge.Float;
+      return &port->variant.control_input.current;
+   }
+   *type = 0;
+   *size = 0;
+   return NULL;
 }
 
 int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
@@ -141,7 +147,7 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       // Create the preset state
       LilvState *state = lilv_state_new_from_instance(
           engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", preset_dir, preset_dir,
-          preset_dir, get_pott_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
+          preset_dir, port_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
 
       if (!state) {
          fprintf(stderr, "\nFailed to create the preset state");

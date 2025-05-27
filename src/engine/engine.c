@@ -13,14 +13,6 @@ static void on_process(void *userdata, struct spa_io_position *position) {
    // printf("   ONP   ");fflush(stdout);
    Engine *engine = userdata;
 
-   if (!engine->pw.connected) {
-      // Defer start of plugin UI until any engine port is connected
-      engine->pw.connected = 1;
-      if (engine->host.start_ui)
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), pluginui_on_start, 0, NULL,
-                        0, false, engine);
-   }
-
    uint32_t n_samples = position->clock.duration;
    uint64_t frame = engine->clock_time;
    float denom = (float)position->clock.rate.denom;
@@ -189,5 +181,10 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0,
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
+
+
+      if (engine->host.start_ui)                                                                                                                                                                   
+         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), pluginui_on_start, 0, NULL,                                                                                               
+                        0, false, engine);            
 
 }
