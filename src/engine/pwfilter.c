@@ -11,7 +11,6 @@ int pwfilter_setup(Engine *engine) {
    char latency[50];
 
    sprintf(latency, "%d/%d", engine->pw.latency_period, engine->pw.samplerate);
-   printf("\nquantum  %d/%d", engine->pw.latency_period, engine->pw.samplerate);
 
    engine->pw.connected = 0;
    // Create pw engine loop resources. Lock the engine loop
@@ -47,6 +46,4 @@ int pwfilter_setup(Engine *engine) {
    // All pw resources created, release the lock
    pw_thread_loop_unlock(engine->pw.engine_loop);
 
-   printf("\nStartup done for pwfilter [%s]", engine->enginename);
-   fflush(stdout);
 }

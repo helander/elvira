@@ -1,16 +1,17 @@
-#include "host.h"
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include <lilv/lilv.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
 #include <lv2/state/state.h>
 #include <pipewire/pipewire.h>
-#include <stdint.h>
-#include <stdio.h>
 
 #include "constants.h"
 #include "engine_data.h"
 #include "ports.h"
+#include "host.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
@@ -132,30 +133,31 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    if (strlen(preset_name)) {
       const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature, NULL};
 
+      char preset_dir[200];
+      sprintf(preset_dir, "%s/.lv2/%s", getenv("HOME"),preset_name);
+
       // Create the preset state
       LilvState *state = lilv_state_new_from_instance(
-          engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", NULL, NULL,
-          NULL, get_pott_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
+          engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", preset_dir, preset_dir,
+          preset_dir, get_pott_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
 
       if (!state) {
          fprintf(stderr, "\nFailed to create the preset state");
          return -1;
       }
 
-      // Save the created preset on filesystem
       char preset_uri[200];
-      char preset_dir[200];
-      char preset_ttl[50];
-      char preset_ttl_url[200];
+      //char preset_ttl[50];
+      //char preset_ttl_url[200];
 
       sprintf(preset_uri, "%s/preset/%s",
               lilv_node_as_uri(lilv_plugin_get_uri(engine->host.lilvPlugin)), preset_name);
-      sprintf(preset_dir, "/home/soundcan/.lv2/%s", preset_name);
-      sprintf(preset_ttl, "%s.ttl", preset_name);
-      sprintf(preset_ttl_url, "file://%s/%s", preset_dir, preset_ttl);
+      //sprintf(preset_ttl, "%s.ttl", preset_name);
+      //sprintf(preset_ttl_url, "file://%s/%s", preset_dir, preset_ttl);
 
+      // Save the created preset on filesystem
       lilv_state_save(constants.world, &constants.map, &constants.unmap, state, preset_uri,
-                      preset_dir, preset_ttl);
+                      preset_dir, "state.ttl");
 
       lilv_state_free(state);
 
@@ -164,7 +166,7 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       // methods that should be tested?
       lilv_world_load_all(constants.world);
 
-      printf("Preset saved to %s/%s with URI: %s\n", preset_dir, preset_ttl, preset_uri);
+      printf("Preset saved to %s with URI: %s\n", preset_dir, preset_uri);
    }
    return 0;
 }
@@ -256,7 +258,5 @@ int host_setup(Engine *engine) {
       strcpy(engine->enginename,
              strdup(lilv_node_as_string(lilv_plugin_get_name(engine->host.lilvPlugin))));
 
-   printf("\nStartup done for host [%s]", engine->enginename);
-   fflush(stdout);
    return 0;
 }
