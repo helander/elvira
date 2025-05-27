@@ -2,10 +2,9 @@
 #include <pipewire/pipewire.h>
 #include <stdio.h>
 
-#include "utils/constants.h"
-#include "set.h"
 #include "controller/controller.h"
-
+#include "set.h"
+#include "utils/constants.h"
 
 static char *empty_set = "{\"set\": \"\", \"engines\": []}";
 
@@ -51,24 +50,24 @@ int main(int argc, char **argv) {
    if (jsonfile == NULL) {
       perror("\nNo file available:");
    } else {
-     json_text = read_stream_to_string(jsonfile);
+      json_text = read_stream_to_string(jsonfile);
    }
 
    if (json_text == NULL) {
-     fprintf(stderr, "\nNo file content available, use empty set.");
-     json_text = empty_set;
+      fprintf(stderr, "\nNo file content available, use empty set.");
+      json_text = empty_set;
    }
 
    EngineSet *engines = engineset_parse(json_text);
    if (json_text != empty_set) free(json_text);
 
    if (engines) {
-     controller_add(engines);
-     engineset_free(engines);
-     controller_start();
-     gtk_main();
-     pw_deinit();
-     return 0;
+      controller_add(engines);
+      engineset_free(engines);
+      controller_start();
+      gtk_main();
+      pw_deinit();
+      return 0;
    }
-   fprintf(stderr,"Failed to parse json input.\n");
+   fprintf(stderr, "Failed to parse json input.\n");
 }

@@ -39,8 +39,8 @@ static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_i
 }
 
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, Engine *engine) {
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_port_event_aseq, port_index, aseq,
-                  aseq->atom.size + sizeof(LV2_Atom), false, engine);
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_port_event_aseq, port_index,
+                  aseq, aseq->atom.size + sizeof(LV2_Atom), false, engine);
 }
 
 // seq is used to pass the port index and data passes the atom
@@ -56,8 +56,8 @@ static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_i
 
 static void send_atom(int port_index, LV2_Atom *atom, Engine *engine) {
    // char prefix[30];
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_port_event_atom, port_index, atom,
-                  atom->size + sizeof(LV2_Atom), false, engine);
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_port_event_atom, port_index,
+                  atom, atom->size + sizeof(LV2_Atom), false, engine);
 }
 
 //============================= control input
@@ -119,8 +119,8 @@ static void setup_audio_input(struct port_data *this, Engine *engine) {
                                      NULL, 0);
 }
 
-static void pre_run_audio_input(struct port_data *this, Engine *engine, uint64_t frame,
-                                float denom, uint64_t n_samples) {
+static void pre_run_audio_input(struct port_data *this, Engine *engine, uint64_t frame, float denom,
+                                uint64_t n_samples) {
    LilvInstance *instance = engine->host.instance;
    float *inp = pw_filter_get_dsp_buffer(this->pwPort, n_samples);
    if (inp == NULL) {
@@ -183,8 +183,8 @@ static void setup_atom_input(struct port_data *this, Engine *engine) {
        NULL, 0);
 }
 
-static void pre_run_atom_input(struct port_data *this, Engine *engine, uint64_t frame,
-                               float denom, uint64_t n_samples) {
+static void pre_run_atom_input(struct port_data *this, Engine *engine, uint64_t frame, float denom,
+                               uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)this->variant.atom_input.buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    lv2_atom_sequence_clear(aseq);
@@ -334,8 +334,8 @@ static void setup_atom_output(struct port_data *this, Engine *engine) {
        NULL, 0);
 }
 
-static void pre_run_atom_output(struct port_data *this, Engine *engine, uint64_t frame,
-                                float denom, uint64_t n_samples) {
+static void pre_run_atom_output(struct port_data *this, Engine *engine, uint64_t frame, float denom,
+                                uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)this->variant.atom_output.buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    aseq->atom.type = constants.atom_Chunk;

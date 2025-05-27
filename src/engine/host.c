@@ -1,23 +1,22 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <pipewire/pipewire.h>
+#include "host.h"
+
 #include <lilv/lilv.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
 #include <lv2/state/state.h>
+#include <pipewire/pipewire.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include "constants.h"
 #include "engine_data.h"
 #include "ports.h"
-#include "host.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
     {LV2_BUF_SIZE__fixedBlockLength, NULL},
     {LV2_BUF_SIZE__boundedBlockLength, NULL},
 };
-
-
 
 static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
                                             const void *data) {
@@ -66,7 +65,6 @@ static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uin
    return LV2_WORKER_SUCCESS;
 }
 
-
 static void load_plugin(Engine *engine) {
    LilvNode *uri = lilv_new_uri(constants.world, engine->plugin_uri);
    LilvPlugin *plugin = NULL;
@@ -83,9 +81,8 @@ static void load_plugin(Engine *engine) {
    engine->host.lilvPlugin = plugin;
 }
 
-
 int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                     void *user_data) {
+                   void *user_data) {
    Engine *engine = (Engine *)user_data;
 
    char *preset_uri = (char *)data;
@@ -119,83 +116,57 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
 
 static float xyz = 25.3;
 
-static const void*
-get_pott_value(const char* port_symbol,
-               void*       user_data,
-               uint32_t*   size,
-               uint32_t*   type)
-{
-  Engine* const engine = (Engine*)user_data;
-    *size = sizeof(float);
-    *type = constants.forge.Float;
-    return &xyz;
+static const void *get_pott_value(const char *port_symbol, void *user_data, uint32_t *size,
+                                  uint32_t *type) {
+   Engine *const engine = (Engine *)user_data;
+   *size = sizeof(float);
+   *type = constants.forge.Float;
+   return &xyz;
 }
 
 int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                     void *user_data) {
+                 void *user_data) {
    Engine *engine = (Engine *)user_data;
    char *preset_name = (char *)data;
 
-
-
    if (strlen(preset_name)) {
+      const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature, NULL};
 
+      // Create the preset state
+      LilvState *state = lilv_state_new_from_instance(
+          engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", NULL, NULL,
+          NULL, get_pott_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
 
-            const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature,  NULL};
+      if (!state) {
+         fprintf(stderr, "\nFailed to create the preset state");
+         return -1;
+      }
 
+      // Save the created preset on filesystem
+      char preset_uri[200];
+      char preset_dir[200];
+      char preset_ttl[50];
+      char preset_ttl_url[200];
 
-    // Create the preset state
-    LilvState* state = lilv_state_new_from_instance(
-        engine->host.lilvPlugin,
-        engine->host.instance,
-        &constants.map,
-        "/tmp/elvira",  
-        NULL,  
-        NULL,  
-        NULL,  
-        get_pott_value,
-        engine,
-        LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
-        features
-    );
+      sprintf(preset_uri, "%s/preset/%s",
+              lilv_node_as_uri(lilv_plugin_get_uri(engine->host.lilvPlugin)), preset_name);
+      sprintf(preset_dir, "/home/soundcan/.lv2/%s", preset_name);
+      sprintf(preset_ttl, "%s.ttl", preset_name);
+      sprintf(preset_ttl_url, "file://%s/%s", preset_dir, preset_ttl);
 
+      lilv_state_save(constants.world, &constants.map, &constants.unmap, state, preset_uri,
+                      preset_dir, preset_ttl);
 
-    if (!state) {
-        fprintf(stderr, "\nFailed to create the preset state");
-        return -1;
-    }
+      lilv_state_free(state);
 
-    // Save the created preset on filesystem
-   char preset_uri[200];
-   char preset_dir[200];
-   char preset_ttl[50];
-   char preset_ttl_url[200];
+      // Various methods has been tested to make the newly created preset be available without
+      // having to restart the program. The methods below works, but is a bit "brutal". Any other
+      // methods that should be tested?
+      lilv_world_load_all(constants.world);
 
-   sprintf(preset_uri,"%s/preset/%s",lilv_node_as_uri(lilv_plugin_get_uri(engine->host.lilvPlugin)),preset_name);
-   sprintf(preset_dir,"/home/soundcan/.lv2/%s",preset_name);
-   sprintf(preset_ttl,"%s.ttl",preset_name);
-   sprintf(preset_ttl_url,"file://%s/%s",preset_dir,preset_ttl);
-
-    lilv_state_save(
-        constants.world,
-        &constants.map,
-        &constants.unmap,
-        state,
-        preset_uri,
-        preset_dir, 
-        preset_ttl
-    );
-
-    lilv_state_free(state);
-
-    // Various methods has been tested to make the newly created preset be available without having to restart the program.
-    // The methods below works, but is a bit "brutal". Any other methods that should be tested?
-    lilv_world_load_all(constants.world);
-
-    printf("Preset saved to %s/%s with URI: %s\n", preset_dir, preset_ttl, preset_uri);
-
-  }
-    return 0;
+      printf("Preset saved to %s/%s with URI: %s\n", preset_dir, preset_ttl, preset_uri);
+   }
+   return 0;
 }
 
 int host_setup(Engine *engine) {
@@ -263,8 +234,8 @@ int host_setup(Engine *engine) {
       engine->host.options_feature.data = engine->host.options;
       engine->host.features[n_features++] = &engine->host.options_feature;
 
-      engine->host.instance =
-          lilv_plugin_instantiate(engine->host.lilvPlugin, engine->pw.samplerate, engine->host.features);
+      engine->host.instance = lilv_plugin_instantiate(engine->host.lilvPlugin,
+                                                      engine->pw.samplerate, engine->host.features);
 
       engine->host.handle = lilv_instance_get_handle(engine->host.instance);
 
@@ -277,7 +248,6 @@ int host_setup(Engine *engine) {
       }
    }
 
-
    ports_init(engine);
 
    spa_ringbuffer_init(&engine->host.work_response_ring);
@@ -286,9 +256,7 @@ int host_setup(Engine *engine) {
       strcpy(engine->enginename,
              strdup(lilv_node_as_string(lilv_plugin_get_name(engine->host.lilvPlugin))));
 
-
    printf("\nStartup done for host [%s]", engine->enginename);
    fflush(stdout);
    return 0;
 }
-

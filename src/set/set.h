@@ -18,6 +18,5 @@ typedef struct {
    int engine_count;
 } EngineSet;
 
-extern EngineSet  *engineset_parse(const char *jsonstring);
+extern EngineSet *engineset_parse(const char *jsonstring);
 extern void engineset_free(EngineSet *set);
-

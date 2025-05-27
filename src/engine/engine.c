@@ -3,23 +3,22 @@
 
 #include <spa/debug/types.h>
 #include <spa/pod/iter.h>
+
 #include "engine_data.h"
-#include "ui.h"
 #include "host.h"
 #include "pwfilter.h"
-
-
+#include "ui.h"
 
 static void on_process(void *userdata, struct spa_io_position *position) {
-//printf("   ONP   ");fflush(stdout);
+   // printf("   ONP   ");fflush(stdout);
    Engine *engine = userdata;
 
    if (!engine->pw.connected) {
       // Defer start of plugin UI until any engine port is connected
       engine->pw.connected = 1;
       if (engine->host.start_ui)
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), pluginui_on_start, 0, NULL, 0,
-                        false, engine);
+         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), pluginui_on_start, 0, NULL,
+                        0, false, engine);
    }
 
    uint32_t n_samples = position->clock.duration;
@@ -84,43 +83,41 @@ static void on_process(void *userdata, struct spa_io_position *position) {
    }
 }
 
-
 static void on_command(void *data, const struct spa_command *command) {
    Engine *engine = (Engine *)data;
    if (SPA_NODE_COMMAND_ID(command) == SPA_NODE_COMMAND_User) {
       if (SPA_POD_TYPE(&command->pod) == SPA_TYPE_Object) {
-         const struct spa_pod_object *obj = (const struct spa_pod_object *) &command->pod;
+         const struct spa_pod_object *obj = (const struct spa_pod_object *)&command->pod;
          struct spa_pod_prop *prop;
          SPA_POD_OBJECT_FOREACH(obj, prop) {
-             if (prop->key == SPA_COMMAND_NODE_extra) {
-                const struct spa_pod *value = &prop->value;
-                if (SPA_POD_TYPE(value) == SPA_TYPE_String) {
-                   const char *command_string = SPA_POD_BODY(value);
+            if (prop->key == SPA_COMMAND_NODE_extra) {
+               const struct spa_pod *value = &prop->value;
+               if (SPA_POD_TYPE(value) == SPA_TYPE_String) {
+                  const char *command_string = SPA_POD_BODY(value);
 
-      printf("\nCommand---[%s]", command_string);
+                  printf("\nCommand---[%s]", command_string);
 
-      char uri[100];
-      char preset_name[100];
-      if (sscanf(command_string, "preset %s", uri) == 1) {
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0, uri, strlen(uri) + 1,
-                        false, engine);
-      } if (sscanf(command_string, "save %s", preset_name) == 1) {
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_save, 0, preset_name, strlen(preset_name) + 1,
-                        false, engine);
-      } else {
-         printf("\nUnknown command [%s]", command_string);
-      }
-
-                }
-             }
+                  char uri[100];
+                  char preset_name[100];
+                  if (sscanf(command_string, "preset %s", uri) == 1) {
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset,
+                                    0, uri, strlen(uri) + 1, false, engine);
+                  }
+                  if (sscanf(command_string, "save %s", preset_name) == 1) {
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_save,
+                                    0, preset_name, strlen(preset_name) + 1, false, engine);
+                  } else {
+                     printf("\nUnknown command [%s]", command_string);
+                  }
+               }
+            }
          }
       }
    }
-} 
+}
 
-
-
-static void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa_pod *param) {
+static void on_param_changed(void *data, void *port_data, uint32_t id,
+                             const struct spa_pod *param) {
    printf("\nParam changed type %d  size %d", param->type, param->size);
    if (param->type == SPA_TYPE_Object) printf("\nobject");
    fflush(stdout);
@@ -138,7 +135,6 @@ const struct pw_filter_events engine_filter_events = {
     .destroy = on_filter_destroy,
     .param_changed = on_param_changed,
 };
-
 
 void engine_defaults(Engine *engine) {
    engine->setname[0] = 0;
@@ -165,37 +161,39 @@ void node_destroy(struct node_data *node) {
    node->host.suil_instance = NULL;
 }
 
-
 #endif
 
-int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size, void *user_data) {
+int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
+                 void *user_data) {
    Engine *engine = (Engine *)user_data;
 
    if (engine->started) {
-     printf("\nAlready started engine %s in group %s",engine->enginename, engine->setname);fflush(stdout);
-     return 0;
+      printf("\nAlready started engine %s in group %s", engine->enginename, engine->setname);
+      fflush(stdout);
+      return 0;
    }
    engine->started = true;
    engine->pw.filter = NULL;
    engine->host.lilv_preset = NULL;
    engine->host.suil_instance = NULL;
    engine->pw.engine_loop = pw_thread_loop_new("engine", NULL);
-//   engine->pw.engine_loop = engine->pw.master_loop;
+   //   engine->pw.engine_loop = engine->pw.master_loop;
    pw_thread_loop_start(engine->pw.engine_loop);
 
-   printf("\nStarting engine %s in group %s",engine->enginename, engine->setname);fflush(stdout);
+   printf("\nStarting engine %s in group %s", engine->enginename, engine->setname);
+   fflush(stdout);
 
    host_setup(engine);
    pwfilter_setup(engine);
 
-   lilv_instance_activate(engine->host.instance); //create host_activate() and call it?
+   lilv_instance_activate(engine->host.instance);  // create host_activate() and call it?
 
-   //embed this in a function host_apply_preset (can we make host indep of engine and only engine->host, we could then pass loop with the call)
+   // embed this in a function host_apply_preset (can we make host indep of engine and only
+   // engine->host, we could then pass loop with the call)
    if (strlen(engine->preset_uri)) {
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0, engine->preset_uri,
-                  strlen(engine->preset_uri), false, engine);
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0,
+                     engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
    printf("\nStartup done for engine [%s]", engine->enginename);
    fflush(stdout);
 }
-

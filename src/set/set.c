@@ -1,6 +1,8 @@
-#include <string.h>
-#include <stdlib.h>
 #include "set.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "cJSON.h"
 
 void engineset_free(EngineSet *set) {
@@ -16,7 +18,7 @@ EngineSet *engineset_parse(const char *jsonstring) {
    cJSON *cjson = cJSON_Parse(jsonstring);
    if (!cjson) return NULL;
 
-   EngineSet *set = calloc(1,sizeof(EngineSet)); 
+   EngineSet *set = calloc(1, sizeof(EngineSet));
 
    cJSON *engineset = cJSON_GetObjectItem(cjson, "set");
    if (cJSON_IsString(engineset)) set->name = strdup(engineset->valuestring);

@@ -7,8 +7,8 @@
 #include <pipewire/filter.h>
 #include <pipewire/pipewire.h>
 #include <spa/utils/ringbuffer.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <suil/suil.h>
 
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
