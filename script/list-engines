@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+
+
+pw-dump | jq -r '[.[]
+    | select(.type == "PipeWire:Interface:Node") 
+    | select(.info.props["media.type"] == "elvira" and .info.props["media.role"] == "engine") 
+    | {id: .id, name: .info.props["node.name"]}
+  ]'
+
