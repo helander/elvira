@@ -41,7 +41,7 @@ add_executable(elvira
     src/engine/engine.c
     src/engine/ports.c
     src/engine/host.c
-    src/engine/pwfilter.c
+    src/engine/node.c
     src/engine/ui.c
     src/utils/constants.c
     src/utils/cJSON.c

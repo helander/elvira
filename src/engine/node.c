@@ -1,4 +1,4 @@
-#include "pwfilter.h"
+#include "node.h"
 
 #include <spa/param/latency-utils.h>
 #include <spa/pod/builder.h>
@@ -7,7 +7,7 @@
 #include "engine.h"
 #include "engine_data.h"
 
-int pwfilter_setup(Engine *engine) {
+int node_setup(Engine *engine) {
    char latency[50];
 
    sprintf(latency, "%d/%d", engine->pw.latency_period, engine->pw.samplerate);

@@ -6,7 +6,7 @@
 
 #include "engine_data.h"
 #include "host.h"
-#include "pwfilter.h"
+#include "node.h"
 #include "ui.h"
 
 static void on_process(void *userdata, struct spa_io_position *position) {
@@ -171,7 +171,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    fflush(stdout);
 
    host_setup(engine);
-   pwfilter_setup(engine);
+   node_setup(engine);
 
    lilv_instance_activate(engine->host.instance);  // create host_activate() and call it?
 
