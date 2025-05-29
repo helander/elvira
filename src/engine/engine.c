@@ -11,24 +11,10 @@
 #include "stb_ds.h"
 #include "ports.h"
 
-static void on_process(void *userdata, struct spa_io_position *position) {
-//   printf("   ONP   ");fflush(stdout);
-   Engine *engine = userdata;
 
-   uint32_t n_samples = position->clock.duration;
-   uint64_t frame = engine->node.clock_time;
-   float denom = (float)position->clock.rate.denom;
-   engine->node.clock_time += position->clock.duration;
+static
+void process_work_responses(Engine *engine)
 
-   for (int n = 0; n < arrlen(engine->ports); n++) {
-      EnginePort *port = &engine->ports[n];
-      if (port->pre_run) {
-         port->pre_run(port, engine, frame, denom, (uint64_t)n_samples);
-      }
-   }
-
-   lilv_instance_run(engine->host.instance, n_samples);
-   /////
    {
       struct spa_ringbuffer *ring = &engine->host.work_response_ring;
       uint8_t *buffer = engine->host.work_response_buffer;
@@ -65,13 +51,36 @@ static void on_process(void *userdata, struct spa_io_position *position) {
             memcpy(payload + space, buffer, msg_len - space);
          }
          // printf("\nCall work_response from on_process");fflush(stdout);
-         engine->host.iface->work_response(engine->host.handle, msg_len, payload);
+        if (engine->host.iface && engine->host.iface->work_response)
+            engine->host.iface->work_response(engine->host.handle, msg_len, payload);
 
          read_index += sizeof(uint16_t) + msg_len;
          spa_ringbuffer_read_update(ring, read_index);
       }
    }
-   /////
+
+
+static void on_process(void *userdata, struct spa_io_position *position) {
+//   printf("   ONP   ");fflush(stdout);
+   Engine *engine = userdata;
+
+   uint32_t n_samples = position->clock.duration;
+   uint64_t frame = engine->node.clock_time;
+   float denom = (float)position->clock.rate.denom;
+   engine->node.clock_time += position->clock.duration;
+
+   for (int n = 0; n < arrlen(engine->ports); n++) {
+      EnginePort *port = &engine->ports[n];
+      if (port->pre_run) {
+         port->pre_run(port, engine, frame, denom, (uint64_t)n_samples);
+      }
+   }
+
+   lilv_instance_run(engine->host.instance, n_samples);
+
+   process_work_responses(engine);
+   if (engine->host.iface && engine->host.iface->end_run)
+            engine->host.iface->end_run(engine->host.handle);
 
    for (int n = 0; n < arrlen(engine->ports); n++) {
       EnginePort *port = &engine->ports[n];
