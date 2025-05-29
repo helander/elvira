@@ -1,6 +1,6 @@
 #include <pipewire/filter.h>
 
-#include "engine_data.h"
+#include "types.h"
 
 extern void engine_defaults(Engine *engine);
 extern int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data,

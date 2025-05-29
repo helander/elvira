@@ -5,16 +5,88 @@
 #include <suil/suil.h>
 
 #include "constants.h"
-#include "engine_data.h"
-#include "ports.h"
+#include "stb_ds.h"
+#include "types.h"
+//#include "ports.h"
+
+
+#include <stdio.h>
+
+//#include "util.h"
+
+static
+EnginePort *find_engine_port(Engine *engine, uint32_t port_index) {
+    for (int n = 0; n < arrlen(engine->ports); n++ ) {                                                                                                                                        
+       EnginePort *port = &engine->ports[n];                                                                                                                                                    
+       if (!port->host_port) continue;
+       if (port->host_port->index == port_index) {                                                                                                                                                      
+          return port;                                                                                                                                                                        
+       }
+    }
+    return NULL;
+}
+
+//skall flyttas till engine_ports
+void engine_ports_write(void *const controller, const uint32_t port_index, const uint32_t buffer_size,
+                      const uint32_t protocol, const void *const buffer) {
+   Engine *engine = (Engine *)controller;
+   EnginePort *port = find_engine_port(engine, port_index);
+   if (protocol == 0U) {
+      const float value = *(const float *)buffer;
+      printf("\nWrite to control port %d value %f", port_index, value);
+      fflush(stdout);
+      //  do something here ...
+   } else if (protocol == constants.atom_eventTransfer) {
+      const LV2_Atom *const atom = (const LV2_Atom *)buffer;
+      if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
+         printf("\nWrite to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
+         fflush(stdout);
+      } else {
+         // printf("\n[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
+         //        engine->enginename, port_index, buffer_size, atom->size, atom->type,
+         //        constants_unmap(constants, atom->type));
+         // fflush(stdout);
+
+         uint16_t len = buffer_size;
+         if (buffer_size > MAX_ATOM_MESSAGE_SIZE) {
+            fprintf(stderr, "Payload too large\n");
+         } else {
+            uint8_t temp[MAX_ATOM_MESSAGE_SIZE + sizeof(uint16_t)];
+            memcpy(temp, &len, sizeof(uint16_t));
+            memcpy(temp + sizeof(uint16_t), buffer, len);
+            uint32_t total_len = len + sizeof(uint16_t);
+
+            uint32_t write_index;
+            spa_ringbuffer_get_write_index(&port->ring, &write_index);
+
+            uint32_t ring_offset = write_index & (ATOM_RINGBUFFER_SIZE - 1);
+            uint32_t space = ATOM_RINGBUFFER_SIZE - ring_offset;
+
+            if (space >= total_len) {
+               memcpy(port->ringbuffer + ring_offset, temp, total_len);
+            } else {
+               // Wrap around
+               memcpy(port->ringbuffer + ring_offset, temp, space);
+               memcpy(port->ringbuffer, temp + space, total_len - space);
+            }
+
+            spa_ringbuffer_write_update(&port->ring, write_index + total_len);
+         }
+      }
+   }
+}
+
+
+
 
 uint32_t ui_port_index(void* const controller, const char* symbol) {
    printf("\nui_port_index(%s)", symbol);
    fflush(stdout);
    Engine* engine = (Engine*)controller;
 
-   for (int n = 0; n < engine->n_ports; n++) {
-      if (!strcmp(symbol, engine->ports[n].name)) return engine->ports[n].index;
+   for (int n = 0; n < arrlen(engine->host.ports); n++) {
+      HostPort *port = &engine->host.ports[n];
+      if (!strcmp(symbol, port->name)) return port->index;
    }
 
    return LV2UI_INVALID_PORT_INDEX;
@@ -28,7 +100,7 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
    printf("\nSUIL section start");
    fflush(stdout);
 
-   SuilHost* suil_host = suil_host_new(ports_write_port, ui_port_index, NULL, NULL);
+   SuilHost* suil_host = suil_host_new(engine_ports_write, ui_port_index, NULL, NULL);
 
    const LilvInstance* const instance = engine->host.instance;
 

@@ -40,6 +40,7 @@ add_executable(elvira
     src/controller/controller.c
     src/engine/engine.c
     src/engine/ports.c
+    src/engine/host_ports.c
     src/engine/host.c
     src/engine/node.c
     src/engine/ui.c

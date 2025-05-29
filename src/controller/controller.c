@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "engine.h"
-#include "engine_data.h"
+#include "types.h"
 #include "set.h"
 #include "stb_ds.h"
 
@@ -23,7 +23,7 @@ static Controller controller;
 static void run_engines() {
    for (int i = 0; i < arrlenu(controller.engines); i++) {
       Engine *engine = &controller.engines[i];
-      engine->pw.master_loop = controller.master_loop;
+      engine->node.master_loop = controller.master_loop;
       pw_loop_invoke(pw_thread_loop_get_loop(controller.master_loop), engine_entry, 0, NULL, 0,
                      false, engine);
    }
@@ -96,8 +96,8 @@ void controller_add(EngineSet *engineset) {
          strcpy(engine->preset_uri, engineset->engines[i].preset);
       }
       if (engineset->engines[i].samplerate)
-         engine->pw.samplerate = engineset->engines[i].samplerate;
-      if (engineset->engines[i].latency) engine->pw.latency_period = engineset->engines[i].latency;
+         engine->node.samplerate = engineset->engines[i].samplerate;
+      if (engineset->engines[i].latency) engine->node.latency_period = engineset->engines[i].latency;
       arrput(controller.engines, *engine);
    }
    fflush(stdout);

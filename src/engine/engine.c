@@ -4,23 +4,27 @@
 #include <spa/debug/types.h>
 #include <spa/pod/iter.h>
 
-#include "engine_data.h"
+#include "types.h"
 #include "host.h"
 #include "node.h"
 #include "ui.h"
+#include "stb_ds.h"
+#include "ports.h"
 
 static void on_process(void *userdata, struct spa_io_position *position) {
-   // printf("   ONP   ");fflush(stdout);
+//   printf("   ONP   ");fflush(stdout);
    Engine *engine = userdata;
 
    uint32_t n_samples = position->clock.duration;
-   uint64_t frame = engine->clock_time;
+   uint64_t frame = engine->node.clock_time;
    float denom = (float)position->clock.rate.denom;
-   engine->clock_time += position->clock.duration;
+   engine->node.clock_time += position->clock.duration;
 
-   for (int n = 0; n < engine->n_ports; n++) {
-      struct port_data *port = &engine->ports[n];
-      if (port->pre_run) port->pre_run(port, engine, frame, denom, (uint64_t)n_samples);
+   for (int n = 0; n < arrlen(engine->ports); n++) {
+      EnginePort *port = &engine->ports[n];
+      if (port->pre_run) {
+         port->pre_run(port, engine, frame, denom, (uint64_t)n_samples);
+      }
    }
 
    lilv_instance_run(engine->host.instance, n_samples);
@@ -69,8 +73,8 @@ static void on_process(void *userdata, struct spa_io_position *position) {
    }
    /////
 
-   for (int n = 0; n < engine->n_ports; n++) {
-      struct port_data *port = &engine->ports[n];
+   for (int n = 0; n < arrlen(engine->ports); n++) {
+      EnginePort *port = &engine->ports[n];
       if (port->post_run) port->post_run(port, engine);
    }
 }
@@ -88,10 +92,10 @@ static void on_command(void *data, const struct spa_command *command) {
                   const char *command_string = SPA_POD_BODY(value);
                   char args[100];
                   if (sscanf(command_string, "preset %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset,
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_preset,
                                     0, args, strlen(args) + 1, false, engine);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_save,
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_save,
                                     0, args, strlen(args) + 1, false, engine);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
@@ -112,7 +116,7 @@ static void on_param_changed(void *data, void *port_data, uint32_t id,
 
 static void on_filter_destroy(void *data) {
    Engine *engine = (Engine *)data;
-   if (engine->pw.filter) pw_filter_destroy(engine->pw.filter);
+   if (engine->node.filter) pw_filter_destroy(engine->node.filter);
 }
 
 const struct pw_filter_events engine_filter_events = {
@@ -129,8 +133,8 @@ void engine_defaults(Engine *engine) {
    engine->plugin_uri[0] = 0;
    engine->preset_uri[0] = 0;
    engine->host.start_ui = true;
-   engine->pw.samplerate = 48000;
-   engine->pw.latency_period = 512;
+   engine->node.samplerate = 48000;
+   engine->node.latency_period = 512;
 }
 
 #if 0
@@ -150,6 +154,57 @@ void node_destroy(struct node_data *node) {
 
 #endif
 
+static
+void engine_ports_setup(Engine *engine) {
+  engine->ports = NULL;
+  for (int n = 0; n < arrlen(engine->node.ports); n++) {
+    NodePort *node_port = &engine->node.ports[n];
+    HostPort *host_port = NULL;
+    for (int n = 0; n < arrlen(engine->host.ports); n++ ) {
+       HostPort *port = &engine->host.ports[n];
+       if (port->index == node_port->index) {
+          host_port = port;
+          break;
+       }
+    }
+    printf("\nEP %s %d",host_port->name,node_port->type);fflush(stdout);
+    EnginePort *engine_port = (EnginePort *) calloc(1,sizeof(EnginePort));
+    engine_port->host_port = host_port;
+    engine_port->node_port = node_port;
+    switch(node_port->type) {
+      case NODE_CONTROL_INPUT:
+        engine_port->type = ENGINE_CONTROL_INPUT;
+        engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+        spa_ringbuffer_init(&engine_port->ring);
+        engine_port->pre_run = pre_run_control_input;
+        engine_port->post_run = post_run_control_input;
+        break;
+      case NODE_CONTROL_OUTPUT:
+        engine_port->type = ENGINE_CONTROL_OUTPUT;
+        engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+        spa_ringbuffer_init(&engine_port->ring);
+        engine_port->pre_run = pre_run_control_output;
+        engine_port->post_run = post_run_control_output;
+        break;
+      case NODE_AUDIO_INPUT:
+        engine_port->type = ENGINE_AUDIO_INPUT;
+        engine_port->pre_run = pre_run_audio_input;
+        engine_port->post_run = post_run_audio_input;
+        break;
+      case NODE_AUDIO_OUTPUT:
+        engine_port->type = ENGINE_AUDIO_OUTPUT;
+        engine_port->pre_run = pre_run_audio_output;
+        engine_port->post_run = post_run_audio_output;
+        break;
+      default:
+        free(engine_port);
+        engine_port = NULL;
+    }
+    if (engine_port) arrput(engine->ports, *engine_port);
+
+  }
+}
+
 int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                  void *user_data) {
    Engine *engine = (Engine *)user_data;
@@ -160,31 +215,31 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       return 0;
    }
    engine->started = true;
-   engine->pw.filter = NULL;
+   engine->node.filter = NULL;
    engine->host.lilv_preset = NULL;
    engine->host.suil_instance = NULL;
-   engine->pw.engine_loop = pw_thread_loop_new("engine", NULL);
-   //   engine->pw.engine_loop = engine->pw.master_loop;
-   pw_thread_loop_start(engine->pw.engine_loop);
+   engine->node.engine_loop = pw_thread_loop_new("engine", NULL);
+   pw_thread_loop_start(engine->node.engine_loop);
 
    printf("\nStarting engine %s in group %s\n\n", engine->enginename, engine->setname);
    fflush(stdout);
 
    host_setup(engine);
    node_setup(engine);
+   engine_ports_setup(engine);
 
    lilv_instance_activate(engine->host.instance);  // create host_activate() and call it?
 
    // embed this in a function host_apply_preset (can we make host indep of engine and only
    // engine->host, we could then pass loop with the call)
    if (strlen(engine->preset_uri)) {
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.master_loop), host_on_preset, 0,
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_preset, 0,
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
 
 
       if (engine->host.start_ui)                                                                                                                                                                   
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), pluginui_on_start, 0, NULL,                                                                                               
+         pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), pluginui_on_start, 0, NULL,                                                                                               
                         0, false, engine);            
 
 }

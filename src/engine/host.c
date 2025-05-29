@@ -1,3 +1,5 @@
+#include "host.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,9 +11,9 @@
 #include <pipewire/pipewire.h>
 
 #include "constants.h"
-#include "engine_data.h"
-#include "ports.h"
-#include "host.h"
+#include "types.h"
+#include "stb_ds.h"
+#include "host_ports.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
@@ -61,7 +63,7 @@ static int on_worker(struct spa_loop *loop, bool async, uint32_t seq, const void
 static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uint32_t size,
                                           const void *data) {
    Engine *engine = (Engine *)handle;
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->pw.engine_loop), on_worker, 0, data, size, false,
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), on_worker, 0, data, size, false,
                   engine);
    return LV2_WORKER_SUCCESS;
 }
@@ -121,12 +123,12 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
 static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
                                   uint32_t *type) {
    Engine *const engine = (Engine *)user_data;
-   for (int n = 0; n < engine->n_ports; n++) {
-      struct port_data *port = &engine->ports[n];
+   for (int n = 0; n < arrlen(engine->host.ports); n++) {
+      HostPort *port = &engine->host.ports[n];
       if (strcmp(port_symbol,port->name)) continue;
       *size = sizeof(float);
       *type = constants.forge.Float;
-      return &port->variant.control_input.current;
+      return &port->current;
    }
    *type = 0;
    *size = 0;
@@ -182,7 +184,7 @@ int host_setup(Engine *engine) {
       static const int32_t min_block_length = 1;
       static const int32_t max_block_length = 8192;
       static const int32_t seq_size = 32768;
-      float fsample_rate = (float)engine->pw.samplerate;
+      float fsample_rate = (float)engine->node.samplerate;
 
       engine->host.block_length = 1024;
       engine->host.features[n_features++] = &constants.map_feature;
@@ -191,6 +193,7 @@ int host_setup(Engine *engine) {
       engine->host.features[n_features++] = &buf_size_features[0];
       engine->host.features[n_features++] = &buf_size_features[1];
       engine->host.features[n_features++] = &buf_size_features[2];
+printf("\nlilvplugin %p",engine->host.lilvPlugin);fflush(stdout);
       if (lilv_plugin_has_feature(engine->host.lilvPlugin, constants.worker_schedule)) {
          engine->host.work_schedule.handle = engine;
          engine->host.work_schedule.schedule_work = my_schedule_work;
@@ -241,7 +244,7 @@ int host_setup(Engine *engine) {
       engine->host.features[n_features++] = &engine->host.options_feature;
 
       engine->host.instance = lilv_plugin_instantiate(engine->host.lilvPlugin,
-                                                      engine->pw.samplerate, engine->host.features);
+                                                      engine->node.samplerate, engine->host.features);
 
       engine->host.handle = lilv_instance_get_handle(engine->host.instance);
 
@@ -254,7 +257,7 @@ int host_setup(Engine *engine) {
       }
    }
 
-   ports_init(engine);
+   host_ports_discover(engine);
 
    spa_ringbuffer_init(&engine->host.work_response_ring);
 

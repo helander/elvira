@@ -4,19 +4,88 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
+#include "stb_ds.h"
 #include "engine.h"
-#include "engine_data.h"
+#include "types.h"
+
+
+static
+void  create_node_ports(Engine *engine) {
+   engine->node.ports = NULL;
+   for (int n = 0; n < arrlen(engine->host.ports); n++) {
+      HostPort *host_port = &engine->host.ports[n];
+      NodePort *node_port = (NodePort *) calloc(1,sizeof(NodePort));
+      node_port->index = host_port->index;
+      switch(host_port->type) {
+        case HOST_CONTROL_INPUT:
+          /*
+          node_port->pwPort = pw_filter_add_port(engine->node.filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                          pw_properties_new(PW_KEY_FORMAT_DSP, "control:f32", PW_KEY_PORT_NAME,
+                                            host_port->name, NULL),
+                          NULL, 0);
+          node_port->type = NODE_CONTROL_INPUT;
+          */
+          free(node_port);
+          node_port = NULL;
+          break;
+        case HOST_CONTROL_OUTPUT:
+          /*
+          node_port->pwPort = pw_filter_add_port( engine->node.filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                                pw_properties_new(PW_KEY_FORMAT_DSP, "control:f32", PW_KEY_PORT_NAME, host_port->name, NULL),
+                                NULL, 0);
+          node_port->type = NODE_CONTROL_OUTPUT;
+          */
+          free(node_port);
+          node_port = NULL;
+          break;
+        case HOST_ATOM_INPUT:
+           node_port->pwPort = pw_filter_add_port(engine->node.filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                              pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit raw UMP", PW_KEY_PORT_NAME, host_port->name, NULL),
+                            NULL, 0);
+           node_port->type = NODE_CONTROL_INPUT;
+           break;
+        case HOST_ATOM_OUTPUT:
+           node_port->pwPort = pw_filter_add_port(engine->node.filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+       pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit raw UMP", PW_KEY_PORT_NAME, host_port->name, NULL),
+       NULL, 0);
+           node_port->type = NODE_CONTROL_OUTPUT;
+          break;
+        case HOST_AUDIO_INPUT:
+           node_port->pwPort = pw_filter_add_port(engine->node.filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                                     pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio",
+                                                       PW_KEY_PORT_NAME, host_port->name, NULL),
+                                     NULL, 0);
+           node_port->type = NODE_AUDIO_INPUT;
+          break;
+        case HOST_AUDIO_OUTPUT:
+           node_port->pwPort = pw_filter_add_port(engine->node.filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
+                          pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio",
+                                            PW_KEY_PORT_NAME, host_port->name, NULL),
+                          NULL, 0);
+           node_port->type = NODE_AUDIO_OUTPUT;
+          break;
+        default:
+          fprintf(stderr,"\nUnknown host port type %d",host_port->type);fflush(stderr);
+          free(node_port);
+          node_port = NULL;
+      }
+      if (node_port) arrput(engine->node.ports, *node_port);
+      // Händer det något här ifrån ports.c eller sker allt på HostPort och EnginePort nivå (förutom skapandet av pw_filter portar och index markering :  if (port->setup) port->setup(port, engine);
+   }
+}
+
+
 
 int node_setup(Engine *engine) {
    char latency[50];
 
-   sprintf(latency, "%d/%d", engine->pw.latency_period, engine->pw.samplerate);
+   sprintf(latency, "%d/%d", engine->node.latency_period, engine->node.samplerate);
 
    // Create pw engine loop resources. Lock the engine loop
-   pw_thread_loop_lock(engine->pw.engine_loop);
+   pw_thread_loop_lock(engine->node.engine_loop);
 
-   engine->pw.filter = pw_filter_new_simple(
-       pw_thread_loop_get_loop(engine->pw.engine_loop), engine->enginename,
+   engine->node.filter = pw_filter_new_simple(
+       pw_thread_loop_get_loop(engine->node.engine_loop), engine->enginename,
        pw_properties_new(PW_KEY_MEDIA_TYPE, "elvira", PW_KEY_MEDIA_CATEGORY, "Filter",
                          PW_KEY_MEDIA_ROLE, "engine", PW_KEY_MEDIA_NAME, engine->setname,
                          PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL),
@@ -29,20 +98,16 @@ int node_setup(Engine *engine) {
    params[0] = spa_process_latency_build(
        &b, SPA_PARAM_ProcessLatency, &SPA_PROCESS_LATENCY_INFO_INIT(.ns = 10 * SPA_NSEC_PER_MSEC));
 
-   if (pw_filter_connect(engine->pw.filter, PW_FILTER_FLAG_RT_PROCESS ,
+   if (pw_filter_connect(engine->node.filter, PW_FILTER_FLAG_RT_PROCESS ,
                          params, 1) < 0) {
       fprintf(stderr, "can't connect\n");
-      // pthread_mutex_unlock(&program_lock);
       return -1;
    }
 
-   // map lv2ports => pw ports (and create the required pw ports)
-   for (int n = 0; n < engine->n_ports; n++) {
-      struct port_data *port = &engine->ports[n];
-      if (port->setup) port->setup(port, engine);
-   }
+   // Create required node ports
+   create_node_ports(engine);
 
    // All pw resources created, release the lock
-   pw_thread_loop_unlock(engine->pw.engine_loop);
+   pw_thread_loop_unlock(engine->node.engine_loop);
 
 }
