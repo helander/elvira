@@ -1,3 +1,5 @@
+<img src="./docs/img/elvira.svg">
+
 # LWira
 Pronounced “elvira”, is an lv2 host for pipewire
 
