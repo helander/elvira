@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gtk/gtk.h>
@@ -7,7 +8,6 @@
 #include "controller/controller.h"
 #include "set.h"
 #include "utils/constants.h"
-
 
 
 
@@ -37,8 +37,15 @@ char *read_stream_to_string(FILE *stream) {
 }
 
 int main(int argc, char **argv) {
+   char lv2_path[100];
+   sprintf(lv2_path,"%s/.lv2:/usr/lib/lv2",getenv("HOME"));
+   setenv("LV2_PATH",lv2_path,0);
+   printf("\nlv2_path [%s]",getenv("LV2_PATH"));
+   fflush(stdout);
    gtk_init(&argc, &argv);
    pw_init(&argc, &argv);
+
+
    constants_init();
    controller_init();
 
