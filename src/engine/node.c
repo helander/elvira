@@ -70,7 +70,6 @@ void  create_node_ports(Engine *engine) {
           node_port = NULL;
       }
       if (node_port) arrput(engine->node.ports, *node_port);
-      // Händer det något här ifrån ports.c eller sker allt på HostPort och EnginePort nivå (förutom skapandet av pw_filter portar och index markering :  if (port->setup) port->setup(port, engine);
    }
 }
 
@@ -84,12 +83,18 @@ int node_setup(Engine *engine) {
    // Create pw engine loop resources. Lock the engine loop
    pw_thread_loop_lock(engine->node.engine_loop);
 
-   engine->node.filter = pw_filter_new_simple(
-       pw_thread_loop_get_loop(engine->node.engine_loop), engine->enginename,
-       pw_properties_new(PW_KEY_MEDIA_TYPE, "elvira", PW_KEY_MEDIA_CATEGORY, "Filter",
-                         PW_KEY_MEDIA_ROLE, "engine", PW_KEY_MEDIA_NAME, engine->setname,
-                         PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL),
-       &engine_filter_events, engine);
+
+
+   struct pw_properties *props;
+   props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, NULL);
+   pw_properties_set(props, "elvira.role", "engine");
+   pw_properties_set(props, "elvira.set", engine->setname);
+   pw_properties_set(props, "elvira.plugin", engine->plugin_uri);
+   pw_properties_set(props, "elvira.preset", engine->preset_uri);
+   pw_properties_set(props, PW_KEY_MEDIA_NAME, engine->setname);
+
+   engine->node.filter = pw_filter_new_simple(pw_thread_loop_get_loop(engine->node.engine_loop), engine->enginename, props, &engine_filter_events, engine);
+
 
    uint8_t buffer[1024];
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));

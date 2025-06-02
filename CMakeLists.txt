@@ -20,7 +20,7 @@ else()
 endif()
 
 # Common fast math and aggressive flags
-set(FAST_FLAGS "-O3 -ffast-math -funsafe-math-optimizations -funroll-loops -fomit-frame-pointer -flto")
+set(FAST_FLAGS "-O3 -ffast-math -funsafe-math-optimizations -funroll-loops -fomit-frame-pointer -flto=auto")
 
 # Apply to C and C++
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ARCH_FLAGS} ${FAST_FLAGS}")
