@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>elvira</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 60%;
+      margin: 20px auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+<img src="img/elvira.svg" />
+
+
+  <h2 style="text-align:center;">elvira engines</h2>
+
+  <table id="engine-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Set</th>
+        <th>Plugin</th>
+        <th>Preset</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be inserted here -->
+    </tbody>
+  </table>
+
+  <!--table id="preset-table">
+    <thead>
+      <tr>
+        <th>uri</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table-->
+
+  <select id="preset-select">
+  </select>
+
+  <script>
+
+
+    fetch("/cgi-bin/engines.sh")
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      })
+      .then(data => {
+        const tableBody = document.querySelector('#engine-table tbody');
+
+        data.forEach(item => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.set}</td>
+            <td>${item.plugin}</td>
+            <td id="preset-${item.id}"></td>
+          `;
+          const node_id = item.id;
+          tableBody.appendChild(row);
+
+
+          {
+            const baseUrl = "/cgi-bin/plugin_presets.sh";
+
+            const params = new URLSearchParams({
+               uri: item.plugin
+            });
+
+            fetch(`${baseUrl}?${params.toString()}`)
+            .then(response => {
+                 if (!response.ok) throw new Error('Network response was not ok');
+                 return response.json();
+            })
+            .then(data => {
+                 const presetTd = document.querySelector(`#preset-${item.id}`);
+                 const presetSelect = document.createElement("select");
+                 console.log(presetSelect,presetTd,data);
+                 const empty = document.createElement('option');
+                 //empty.selected = true;
+                 empty.innerHTML = "";
+                 presetSelect.appendChild(empty);
+                 data.forEach(item => {
+                   const opt = document.createElement('option');
+                   opt.innerHTML = `${item}`;
+                   presetSelect.appendChild(opt);
+
+                   presetSelect.addEventListener('change', function(event) {
+                     console.log('Selected value:', event.target.value);
+                     if (event.target.value != '') apply_preset(node_id,event.target.value);
+                   });
+
+                 });
+
+                 for (let i = 0; i < presetSelect.options.length; i++) {
+                   if (presetSelect.options[i].text === item.preset) {
+                     presetSelect.selectedIndex = i;
+                     break;
+                   }
+                 }
+                 console.log("add select");
+                 presetTd.appendChild(presetSelect);
+                 console.log("select added");
+            })
+            .catch(error => {
+                console.error('presets Fetch error:', error);
+            });
+          }    
+
+        });
+      })
+      .catch(error => {
+        console.error('engines Fetch error:', error);
+        const tableBody = document.querySelector('#engine-table tbody');
+        tableBody.innerHTML = `<tr><td colspan="3">Failed to load data</td></tr>`;
+      });
+
+
+
+
+
+
+function apply_preset(node_id, preset_uri) {
+   console.log(`Apply preset ${preset_uri} on node ${node_id}`);
+   fetch('/cgi-bin/command.sh', {
+      method: 'PUT',
+      headers: {
+         'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+         node_id: node_id,
+         command: 'preset',
+         preset_uri: preset_uri
+      })
+   })
+   .then(response => {
+      if (!response.ok) {
+         throw new Error('Network response was not ok');
+      }
+      return response.text();
+   })
+   .then(text => {
+      document.getElementById('output').textContent = text;
+   })
+   .catch(error => {
+      console.error('Fetch error:', error);
+      document.getElementById('output').textContent = 'Error: ' + error.message;
+   });
+}
+
+/*
+
+fetch('/cgi-bin/handler.sh', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'Alice' })
+})
+.then(response => {
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+  return response.text();
+})
+.then(text => {
+  document.getElementById('output').textContent = text;
+})
+.catch(error => {
+  console.error('Fetch error:', error);
+  document.getElementById('output').textContent = 'Error: ' + error.message;
+});
+
+*/
+
+
+
+ /*
+
+
+*/
+
+
+  </script>
+
+
+<div id="output"></div>
+</body>
+</html>
