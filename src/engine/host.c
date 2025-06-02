@@ -105,8 +105,18 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
             const LV2_Feature *features[] = {&urid_feature, NULL};
 
             lilv_state_restore(state, engine->host.instance, NULL, NULL, 0, features);
-            printf("\nPreset with URI: %s applied\n", preset_uri);
-            fflush(stdout);
+            printf("\nPreset with URI: %s applied\n", preset_uri);fflush(stdout);
+
+        pw_thread_loop_lock(engine->node.engine_loop);
+
+        struct spa_dict_item items[1];
+        items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
+        pw_filter_update_properties(engine->node.filter, NULL, &SPA_DICT_INIT(items, 1));
+
+        pw_thread_loop_unlock(engine->node.engine_loop);
+
+
+
          } else {
             printf("\nNo preset to load.");
             fflush(stdout);
