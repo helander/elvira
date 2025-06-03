@@ -88,6 +88,7 @@ func main() {
 					"SPECIAL_VAR=HejFrånGo", // Exempel på egen variabel
 					"XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"), 
 					"LV2_PATH="+os.Getenv("LV2_PATH"), 
+					"DISPLAY="+os.Getenv("DISPLAY"), 
 				},
 		}
 

@@ -22,7 +22,11 @@
 <body>
 <img src="img/elvira.svg" />
 
-
+<div>
+   <select id="plugin-select"></select>
+   <input id="engine-name"/>
+   <button onclick="create_engine()">Create engine</button>
+</div>
   <h2 style="text-align:center;">elvira engines</h2>
 
   <table id="engine-table">
@@ -54,6 +58,36 @@
   </select>
 
   <script>
+
+function create_engine() {
+   const plugin = document.querySelector('#plugin-select');
+   const engine = document.querySelector('#engine-name');
+   console.log('plugin',plugin.value,'engine',engine.value);
+          {
+            const baseUrl = "/cgi-bin/create_engine.sh";
+
+            const params = new URLSearchParams({
+               name: engine.value,
+               uri: plugin.value
+            });
+
+            fetch(`${baseUrl}?${params.toString()}`)
+            .then(response => {
+                 if (!response.ok) throw new Error('Network response was not ok');
+                 return response.text();
+            })
+            .then(data => {
+            })
+            .catch(error => {
+                console.error('presets Fetch error:', error);
+            });
+          }    
+
+
+
+
+
+}
 
 
     fetch("/cgi-bin/engines.sh")
@@ -102,10 +136,6 @@
                    opt.innerHTML = `${item}`;
                    presetSelect.appendChild(opt);
 
-                   presetSelect.addEventListener('change', function(event) {
-                     console.log('Selected value:', event.target.value);
-                     if (event.target.value != '') apply_preset(node_id,event.target.value);
-                   });
 
                  });
 
@@ -116,6 +146,10 @@
                    }
                  }
                  console.log("add select");
+                   presetSelect.addEventListener('change', function(event) {
+                     console.log('Selected value:', event.target.value);
+                     if (event.target.value != '') apply_preset(node_id,event.target.value);
+                   });
                  presetTd.appendChild(presetSelect);
                  console.log("select added");
             })
@@ -134,6 +168,34 @@
 
 
 
+          {
+            const baseUrl = "/cgi-bin/lv2ls.sh";
+
+
+            fetch(baseUrl)
+            .then(response => {
+                 if (!response.ok) throw new Error('Network response was not ok');
+                 return response.json();
+            })
+            .then(data => {
+                 const pluginSelect = document.querySelector("#plugin-select");
+                 data.forEach(item => {
+                   const opt = document.createElement('option');
+                   opt.innerHTML = `${item}`;
+                   pluginSelect.appendChild(opt);
+
+
+                 });
+
+                   pluginSelect.addEventListener('change', function(event) {
+                     console.log('Selected value:', event.target.value);
+                   });
+
+            })
+            .catch(error => {
+                console.error('presets Fetch error:', error);
+            });
+          }    
 
 
 
