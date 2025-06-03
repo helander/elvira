@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "common/types.h"
+#include "engine_types.h"
 #include "constants.h"
 
 static float dummyAudioInput[20000];
@@ -16,12 +17,12 @@ static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_i
                               const void *data, size_t size, void *user_data) {
    Engine *engine = (Engine *)user_data;
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)data;
-   if (engine->host.suil_instance) {
+   if (engine->host->suil_instance) {
       LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
       if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
          long payloadSize = aseq->atom.size;
          while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
-            suil_instance_port_event(engine->host.suil_instance, port_index, aev->body.size,
+            suil_instance_port_event(engine->host->suil_instance, port_index, aev->body.size,
                                      constants.atom_eventTransfer, &aev->body);
             int eventSize =
                 lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
@@ -34,7 +35,7 @@ static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_i
 }
 
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, Engine *engine) {
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), on_port_event_aseq, port_index,
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), on_port_event_aseq, port_index,
                   aseq, aseq->atom.size + sizeof(LV2_Atom), false, engine);
 }
 
@@ -42,13 +43,13 @@ static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, Engine *
 static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_index,
                               const void *atom, size_t size, void *user_data) {
    Engine *engine = (Engine *)user_data;
-   if (engine->host.suil_instance)
-      suil_instance_port_event(engine->host.suil_instance, port_index, size,
+   if (engine->host->suil_instance)
+      suil_instance_port_event(engine->host->suil_instance, port_index, size,
                                constants.atom_eventTransfer, atom);
 }
 
 static void send_atom(int port_index, LV2_Atom *atom, Engine *engine) {
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), on_port_event_atom, port_index,
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), on_port_event_atom, port_index,
                   atom, atom->size + sizeof(LV2_Atom), false, engine);
 }
 
@@ -56,9 +57,9 @@ void pre_run_audio_input(EnginePort *port, Engine *engine, uint64_t frame, float
                          uint64_t n_samples) {
    float *inp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (inp == NULL) {
-      lilv_instance_connect_port(engine->host.instance, port->host_port->index, dummyAudioInput);
+      lilv_instance_connect_port(engine->host->instance, port->host_port->index, dummyAudioInput);
    } else {
-      lilv_instance_connect_port(engine->host.instance, port->host_port->index, inp);
+      lilv_instance_connect_port(engine->host->instance, port->host_port->index, inp);
    }
 }
 
@@ -68,9 +69,9 @@ void pre_run_audio_output(EnginePort *port, Engine *engine, uint64_t frame, floa
                           uint64_t n_samples) {
    float *outp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (outp == NULL) {
-      lilv_instance_connect_port(engine->host.instance, port->host_port->index, dummyAudioOutput);
+      lilv_instance_connect_port(engine->host->instance, port->host_port->index, dummyAudioOutput);
    } else {
-      lilv_instance_connect_port(engine->host.instance, port->host_port->index, outp);
+      lilv_instance_connect_port(engine->host->instance, port->host_port->index, outp);
    }
 }
 

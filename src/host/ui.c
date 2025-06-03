@@ -5,6 +5,8 @@
 #include <suil/suil.h>
 
 #include "common/types.h"
+#include "host_types.h"
+#include "engine_types.h"
 #include "constants.h"
 #include "utils/stb_ds.h"
 
@@ -78,8 +80,8 @@ uint32_t ui_port_index(void* const controller, const char* symbol) {
    fflush(stdout);
    Engine* engine = (Engine*)controller;
 
-   for (int n = 0; n < arrlen(engine->host.ports); n++) {
-      HostPort* port = &engine->host.ports[n];
+   for (int n = 0; n < arrlen(engine->host->ports); n++) {
+      HostPort* port = &engine->host->ports[n];
       if (!strcmp(symbol, port->name)) return port->index;
    }
 
@@ -96,10 +98,10 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
 
    SuilHost* suil_host = suil_host_new(engine_ports_write, ui_port_index, NULL, NULL);
 
-   const LilvInstance* const instance = engine->host.instance;
+   const LilvInstance* const instance = engine->host->instance;
 
    // Get UIs for the plugin
-   const LilvUIs* uis = lilv_plugin_get_uis(engine->host.lilvPlugin);
+   const LilvUIs* uis = lilv_plugin_get_uis(engine->host->lilvPlugin);
    LilvUI* selectedUI = NULL;
    LILV_FOREACH(uis, j, uis) {
       const LilvUI* ui = lilv_uis_get(uis, j);
@@ -116,12 +118,12 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
    }
    lilv_node_free(host_type);
 
-   printf("Plugin: %s\n\n", lilv_node_as_string(lilv_plugin_get_uri(engine->host.lilvPlugin)));
+   printf("Plugin: %s\n\n", lilv_node_as_string(lilv_plugin_get_uri(engine->host->lilvPlugin)));
    printf("Selected UI: %s\n\n", lilv_node_as_string(lilv_ui_get_uri(selectedUI)));
    printf("Selected UI type: %s\n\n", lilv_node_as_string(selected_ui_type));
 
    const LV2_Feature instance_feature = {LV2_INSTANCE_ACCESS_URI,
-                                         lilv_instance_get_handle(engine->host.instance)};
+                                         lilv_instance_get_handle(engine->host->instance)};
 
    const LV2_Feature idle_feature = {LV2_UI__idleInterface, NULL};
 
@@ -133,16 +135,16 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
    gtk_window_set_default_size(GTK_WINDOW(plugin_window), 200, 150);
    gtk_widget_show_all(plugin_window);
 
-   engine->host.suil_instance = suil_instance_new(
+   engine->host->suil_instance = suil_instance_new(
        suil_host, (void*)engine, "http://lv2plug.in/ns/extensions/ui#Gtk3UI",
-       lilv_node_as_string(lilv_plugin_get_uri(engine->host.lilvPlugin)),
+       lilv_node_as_string(lilv_plugin_get_uri(engine->host->lilvPlugin)),
        lilv_node_as_string(lilv_ui_get_uri(selectedUI)), lilv_node_as_string(selected_ui_type),
        lilv_file_uri_parse(lilv_node_as_uri(lilv_ui_get_bundle_uri(selectedUI)), NULL),
        lilv_file_uri_parse(lilv_node_as_uri(lilv_ui_get_binary_uri(selectedUI)), NULL),
        ui_features);
 
-   if (engine->host.suil_instance) {
-      GtkWidget* plugin_widget = suil_instance_get_widget(engine->host.suil_instance);
+   if (engine->host->suil_instance) {
+      GtkWidget* plugin_widget = suil_instance_get_widget(engine->host->suil_instance);
       gtk_container_add(GTK_CONTAINER(plugin_window), plugin_widget);
       gtk_widget_show_all(plugin_window);
    } else {

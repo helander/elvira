@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "common/types.h"
 
 // extern void ports_init(Engine* engine);

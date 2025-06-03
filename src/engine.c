@@ -5,6 +5,10 @@
 #include <spa/pod/iter.h>
 
 #include "common/types.h"
+#include "engine_types.h"
+#include "host/host_types.h"
+#include "node/node_types.h"
+
 #include "engine_ports.h"
 #include "host/host.h"
 #include "host/ui.h"
@@ -14,8 +18,8 @@
 static void process_work_responses(Engine *engine)
 
 {
-   struct spa_ringbuffer *ring = &engine->host.work_response_ring;
-   uint8_t *buffer = engine->host.work_response_buffer;
+   struct spa_ringbuffer *ring = &engine->host->work_response_ring;
+   uint8_t *buffer = engine->host->work_response_buffer;
    uint32_t read_index;
    uint32_t write_index;
    spa_ringbuffer_get_read_index(ring, &read_index);
@@ -49,8 +53,8 @@ static void process_work_responses(Engine *engine)
          memcpy(payload + space, buffer, msg_len - space);
       }
       // printf("\nCall work_response from on_process");fflush(stdout);
-      if (engine->host.iface && engine->host.iface->work_response)
-         engine->host.iface->work_response(engine->host.handle, msg_len, payload);
+      if (engine->host->iface && engine->host->iface->work_response)
+         engine->host->iface->work_response(engine->host->handle, msg_len, payload);
 
       read_index += sizeof(uint16_t) + msg_len;
       spa_ringbuffer_read_update(ring, read_index);
@@ -62,9 +66,9 @@ static void on_process(void *userdata, struct spa_io_position *position) {
    Engine *engine = userdata;
 
    uint32_t n_samples = position->clock.duration;
-   uint64_t frame = engine->node.clock_time;
+   uint64_t frame = engine->node->clock_time;
    float denom = (float)position->clock.rate.denom;
-   engine->node.clock_time += position->clock.duration;
+   engine->node->clock_time += position->clock.duration;
 
    for (int n = 0; n < arrlen(engine->ports); n++) {
       EnginePort *port = &engine->ports[n];
@@ -73,11 +77,11 @@ static void on_process(void *userdata, struct spa_io_position *position) {
       }
    }
 
-   lilv_instance_run(engine->host.instance, n_samples);
+   lilv_instance_run(engine->host->instance, n_samples);
 
    process_work_responses(engine);
-   if (engine->host.iface && engine->host.iface->end_run)
-      engine->host.iface->end_run(engine->host.handle);
+   if (engine->host->iface && engine->host->iface->end_run)
+      engine->host->iface->end_run(engine->host->handle);
 
    for (int n = 0; n < arrlen(engine->ports); n++) {
       EnginePort *port = &engine->ports[n];
@@ -98,10 +102,10 @@ static void on_command(void *data, const struct spa_command *command) {
                   const char *command_string = SPA_POD_BODY(value);
                   char args[100];
                   if (sscanf(command_string, "preset %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop),
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop),
                                     host_on_preset, 0, args, strlen(args) + 1, false, engine);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_save,
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), host_on_save,
                                     0, args, strlen(args) + 1, false, engine);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
@@ -122,7 +126,7 @@ static void on_param_changed(void *data, void *port_data, uint32_t id,
 
 static void on_filter_destroy(void *data) {
    Engine *engine = (Engine *)data;
-   if (engine->node.filter) pw_filter_destroy(engine->node.filter);
+   if (engine->node->filter) pw_filter_destroy(engine->node->filter);
 }
 
 /*
@@ -140,9 +144,9 @@ void engine_defaults(Engine *engine) {
    engine->enginename[0] = 0;
    engine->plugin_uri[0] = 0;
    engine->preset_uri[0] = 0;
-   engine->host.start_ui = false;
-   engine->node.samplerate = 48000;
-   engine->node.latency_period = 512;
+   engine->host->start_ui = false;
+   engine->samplerate = 48000;
+   engine->node->latency_period = 512;
 }
 
 #if 0
@@ -156,19 +160,19 @@ void node_destroy(struct node_data *node) {
    node->nodename[0] = 0;
    node->plugin_uri[0] = 0;
    node->preset_uri[0] = 0;
-   node->host.lilv_preset = NULL;
-   node->host.suil_instance = NULL;
+   node->host->lilv_preset = NULL;
+   node->host->suil_instance = NULL;
 }
 
 #endif
 
 static void engine_ports_setup(Engine *engine) {
    engine->ports = NULL;
-   for (int n = 0; n < arrlen(engine->node.ports); n++) {
-      NodePort *node_port = &engine->node.ports[n];
+   for (int n = 0; n < arrlen(engine->node->ports); n++) {
+      NodePort *node_port = &engine->node->ports[n];
       HostPort *host_port = NULL;
-      for (int n = 0; n < arrlen(engine->host.ports); n++) {
-         HostPort *port = &engine->host.ports[n];
+      for (int n = 0; n < arrlen(engine->host->ports); n++) {
+         HostPort *port = &engine->host->ports[n];
          if (port->index == node_port->index) {
             host_port = port;
             break;
@@ -219,11 +223,11 @@ void engine_entry(Engine *engine) {
       return;
    }
    engine->started = true;
-   engine->node.filter = NULL;
-   engine->host.lilv_preset = NULL;
-   engine->host.suil_instance = NULL;
-   engine->node.engine_loop = pw_thread_loop_new("engine", NULL);
-   pw_thread_loop_start(engine->node.engine_loop);
+   engine->node->filter = NULL;
+   engine->host->lilv_preset = NULL;
+   engine->host->suil_instance = NULL;
+   engine->node->engine_loop = pw_thread_loop_new("engine", NULL);
+   pw_thread_loop_start(engine->node->engine_loop);
 
    printf("\nStarting engine %s %s (%s)\n\n", engine->enginename, engine->plugin_uri,
           engine->preset_uri);
@@ -239,16 +243,16 @@ void engine_entry(Engine *engine) {
 
    engine_ports_setup(engine);
 
-   lilv_instance_activate(engine->host.instance);  // create host_activate() and call it?
+   lilv_instance_activate(engine->host->instance);  // create host_activate() and call it?
 
    // embed this in a function host_apply_preset (can we make host indep of engine and only
    // engine->host, we could then pass loop with the call)
    if (strlen(engine->preset_uri)) {
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_preset, 0,
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), host_on_preset, 0,
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
 
-   if (engine->host.start_ui)
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), pluginui_on_start, 0, NULL,
+   if (engine->host->start_ui)
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), pluginui_on_start, 0, NULL,
                      0, false, engine);
 }
