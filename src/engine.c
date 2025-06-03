@@ -5,63 +5,60 @@
 #include <spa/pod/iter.h>
 
 #include "common/types.h"
-#include "host/host.h"
-#include "node/node.h"
-#include "host/ui.h"
-#include "utils/stb_ds.h"
 #include "engine_ports.h"
+#include "host/host.h"
+#include "host/ui.h"
+#include "node/node.h"
+#include "utils/stb_ds.h"
 
+static void process_work_responses(Engine *engine)
 
-static
-void process_work_responses(Engine *engine)
+{
+   struct spa_ringbuffer *ring = &engine->host.work_response_ring;
+   uint8_t *buffer = engine->host.work_response_buffer;
+   uint32_t read_index;
+   uint32_t write_index;
+   spa_ringbuffer_get_read_index(ring, &read_index);
+   spa_ringbuffer_get_write_index(ring, &write_index);
+   while ((write_index - read_index) >= sizeof(uint16_t)) {
+      uint16_t msg_len;
+      uint32_t offset = read_index & (WORK_RESPONSE_RINGBUFFER_SIZE - 1);
+      uint32_t space = WORK_RESPONSE_RINGBUFFER_SIZE - offset;
 
-   {
-      struct spa_ringbuffer *ring = &engine->host.work_response_ring;
-      uint8_t *buffer = engine->host.work_response_buffer;
-      uint32_t read_index;
-      uint32_t write_index;
-      spa_ringbuffer_get_read_index(ring, &read_index);
-      spa_ringbuffer_get_write_index(ring, &write_index);
-      while ((write_index - read_index) >= sizeof(uint16_t)) {
-         uint16_t msg_len;
-         uint32_t offset = read_index & (WORK_RESPONSE_RINGBUFFER_SIZE - 1);
-         uint32_t space = WORK_RESPONSE_RINGBUFFER_SIZE - offset;
-
-         if (space >= sizeof(uint16_t)) {
-            memcpy(&msg_len, buffer + offset, sizeof(uint16_t));
-         } else {
-            uint8_t tmp[2];
-            memcpy(tmp, buffer + offset, space);
-            memcpy(tmp + space, buffer, sizeof(uint16_t) - space);
-            memcpy(&msg_len, tmp, sizeof(uint16_t));
-         }
-
-         if ((write_index - read_index) < sizeof(uint16_t) + msg_len) {
-            break;  // Incomplete message
-         }
-
-         uint8_t payload[MAX_WORK_RESPONSE_MESSAGE_SIZE];
-         offset = (read_index + sizeof(uint16_t)) & (WORK_RESPONSE_RINGBUFFER_SIZE - 1);
-         space = WORK_RESPONSE_RINGBUFFER_SIZE - offset;
-
-         if (space >= msg_len) {
-            memcpy(payload, buffer + offset, msg_len);
-         } else {
-            memcpy(payload, buffer + offset, space);
-            memcpy(payload + space, buffer, msg_len - space);
-         }
-         // printf("\nCall work_response from on_process");fflush(stdout);
-        if (engine->host.iface && engine->host.iface->work_response)
-            engine->host.iface->work_response(engine->host.handle, msg_len, payload);
-
-         read_index += sizeof(uint16_t) + msg_len;
-         spa_ringbuffer_read_update(ring, read_index);
+      if (space >= sizeof(uint16_t)) {
+         memcpy(&msg_len, buffer + offset, sizeof(uint16_t));
+      } else {
+         uint8_t tmp[2];
+         memcpy(tmp, buffer + offset, space);
+         memcpy(tmp + space, buffer, sizeof(uint16_t) - space);
+         memcpy(&msg_len, tmp, sizeof(uint16_t));
       }
-   }
 
+      if ((write_index - read_index) < sizeof(uint16_t) + msg_len) {
+         break;  // Incomplete message
+      }
+
+      uint8_t payload[MAX_WORK_RESPONSE_MESSAGE_SIZE];
+      offset = (read_index + sizeof(uint16_t)) & (WORK_RESPONSE_RINGBUFFER_SIZE - 1);
+      space = WORK_RESPONSE_RINGBUFFER_SIZE - offset;
+
+      if (space >= msg_len) {
+         memcpy(payload, buffer + offset, msg_len);
+      } else {
+         memcpy(payload, buffer + offset, space);
+         memcpy(payload + space, buffer, msg_len - space);
+      }
+      // printf("\nCall work_response from on_process");fflush(stdout);
+      if (engine->host.iface && engine->host.iface->work_response)
+         engine->host.iface->work_response(engine->host.handle, msg_len, payload);
+
+      read_index += sizeof(uint16_t) + msg_len;
+      spa_ringbuffer_read_update(ring, read_index);
+   }
+}
 
 static void on_process(void *userdata, struct spa_io_position *position) {
-//   printf("   ONP   ");fflush(stdout);
+   //   printf("   ONP   ");fflush(stdout);
    Engine *engine = userdata;
 
    uint32_t n_samples = position->clock.duration;
@@ -80,7 +77,7 @@ static void on_process(void *userdata, struct spa_io_position *position) {
 
    process_work_responses(engine);
    if (engine->host.iface && engine->host.iface->end_run)
-            engine->host.iface->end_run(engine->host.handle);
+      engine->host.iface->end_run(engine->host.handle);
 
    for (int n = 0; n < arrlen(engine->ports); n++) {
       EnginePort *port = &engine->ports[n];
@@ -101,8 +98,8 @@ static void on_command(void *data, const struct spa_command *command) {
                   const char *command_string = SPA_POD_BODY(value);
                   char args[100];
                   if (sscanf(command_string, "preset %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_preset,
-                                    0, args, strlen(args) + 1, false, engine);
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop),
+                                    host_on_preset, 0, args, strlen(args) + 1, false, engine);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
                      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_save,
                                     0, args, strlen(args) + 1, false, engine);
@@ -165,55 +162,54 @@ void node_destroy(struct node_data *node) {
 
 #endif
 
-static
-void engine_ports_setup(Engine *engine) {
-  engine->ports = NULL;
-  for (int n = 0; n < arrlen(engine->node.ports); n++) {
-    NodePort *node_port = &engine->node.ports[n];
-    HostPort *host_port = NULL;
-    for (int n = 0; n < arrlen(engine->host.ports); n++ ) {
-       HostPort *port = &engine->host.ports[n];
-       if (port->index == node_port->index) {
-          host_port = port;
-          break;
-       }
-    }
-    printf("\nEP %s %d",host_port->name,node_port->type);fflush(stdout);
-    EnginePort *engine_port = (EnginePort *) calloc(1,sizeof(EnginePort));
-    engine_port->host_port = host_port;
-    engine_port->node_port = node_port;
-    switch(node_port->type) {
-      case NODE_CONTROL_INPUT:
-        engine_port->type = ENGINE_CONTROL_INPUT;
-        engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
-        spa_ringbuffer_init(&engine_port->ring);
-        engine_port->pre_run = pre_run_control_input;
-        engine_port->post_run = post_run_control_input;
-        break;
-      case NODE_CONTROL_OUTPUT:
-        engine_port->type = ENGINE_CONTROL_OUTPUT;
-        engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
-        spa_ringbuffer_init(&engine_port->ring);
-        engine_port->pre_run = pre_run_control_output;
-        engine_port->post_run = post_run_control_output;
-        break;
-      case NODE_AUDIO_INPUT:
-        engine_port->type = ENGINE_AUDIO_INPUT;
-        engine_port->pre_run = pre_run_audio_input;
-        engine_port->post_run = post_run_audio_input;
-        break;
-      case NODE_AUDIO_OUTPUT:
-        engine_port->type = ENGINE_AUDIO_OUTPUT;
-        engine_port->pre_run = pre_run_audio_output;
-        engine_port->post_run = post_run_audio_output;
-        break;
-      default:
-        free(engine_port);
-        engine_port = NULL;
-    }
-    if (engine_port) arrput(engine->ports, *engine_port);
-
-  }
+static void engine_ports_setup(Engine *engine) {
+   engine->ports = NULL;
+   for (int n = 0; n < arrlen(engine->node.ports); n++) {
+      NodePort *node_port = &engine->node.ports[n];
+      HostPort *host_port = NULL;
+      for (int n = 0; n < arrlen(engine->host.ports); n++) {
+         HostPort *port = &engine->host.ports[n];
+         if (port->index == node_port->index) {
+            host_port = port;
+            break;
+         }
+      }
+      printf("\nEP %s %d", host_port->name, node_port->type);
+      fflush(stdout);
+      EnginePort *engine_port = (EnginePort *)calloc(1, sizeof(EnginePort));
+      engine_port->host_port = host_port;
+      engine_port->node_port = node_port;
+      switch (node_port->type) {
+         case NODE_CONTROL_INPUT:
+            engine_port->type = ENGINE_CONTROL_INPUT;
+            engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+            spa_ringbuffer_init(&engine_port->ring);
+            engine_port->pre_run = pre_run_control_input;
+            engine_port->post_run = post_run_control_input;
+            break;
+         case NODE_CONTROL_OUTPUT:
+            engine_port->type = ENGINE_CONTROL_OUTPUT;
+            engine_port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+            spa_ringbuffer_init(&engine_port->ring);
+            engine_port->pre_run = pre_run_control_output;
+            engine_port->post_run = post_run_control_output;
+            break;
+         case NODE_AUDIO_INPUT:
+            engine_port->type = ENGINE_AUDIO_INPUT;
+            engine_port->pre_run = pre_run_audio_input;
+            engine_port->post_run = post_run_audio_input;
+            break;
+         case NODE_AUDIO_OUTPUT:
+            engine_port->type = ENGINE_AUDIO_OUTPUT;
+            engine_port->pre_run = pre_run_audio_output;
+            engine_port->post_run = post_run_audio_output;
+            break;
+         default:
+            free(engine_port);
+            engine_port = NULL;
+      }
+      if (engine_port) arrput(engine->ports, *engine_port);
+   }
 }
 
 void engine_entry(Engine *engine) {
@@ -229,7 +225,8 @@ void engine_entry(Engine *engine) {
    engine->node.engine_loop = pw_thread_loop_new("engine", NULL);
    pw_thread_loop_start(engine->node.engine_loop);
 
-   printf("\nStarting engine %s %s (%s)\n\n", engine->enginename, engine->plugin_uri, engine->preset_uri);
+   printf("\nStarting engine %s %s (%s)\n\n", engine->enginename, engine->plugin_uri,
+          engine->preset_uri);
    fflush(stdout);
 
    host_setup(engine);
@@ -251,9 +248,7 @@ void engine_entry(Engine *engine) {
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
 
-
-      if (engine->host.start_ui)                                                                                                                                                                   
-         pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), pluginui_on_start, 0, NULL,                                                                                               
-                        0, false, engine);            
-
+   if (engine->host.start_ui)
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), pluginui_on_start, 0, NULL,
+                     0, false, engine);
 }

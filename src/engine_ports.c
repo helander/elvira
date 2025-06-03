@@ -5,13 +5,12 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "constants.h"
 #include "common/types.h"
+#include "constants.h"
 #include "utils/util.h"
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
-
 
 // seq is used to pass the port index and data passes the atom
 static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_index,
@@ -58,9 +57,8 @@ static void send_atom(int port_index, LV2_Atom *atom, Engine *engine) {
                   atom, atom->size + sizeof(LV2_Atom), false, engine);
 }
 
-
-
-void pre_run_audio_input(EnginePort *port, Engine *engine, uint64_t frame, float denom, uint64_t n_samples) {
+void pre_run_audio_input(EnginePort *port, Engine *engine, uint64_t frame, float denom,
+                         uint64_t n_samples) {
    float *inp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (inp == NULL) {
       lilv_instance_connect_port(engine->host.instance, port->host_port->index, dummyAudioInput);
@@ -71,8 +69,8 @@ void pre_run_audio_input(EnginePort *port, Engine *engine, uint64_t frame, float
 
 void post_run_audio_input(EnginePort *port, Engine *engine) {}
 
-
-void pre_run_audio_output(EnginePort *port, Engine *engine, uint64_t frame, float denom, uint64_t n_samples) {
+void pre_run_audio_output(EnginePort *port, Engine *engine, uint64_t frame, float denom,
+                          uint64_t n_samples) {
    float *outp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (outp == NULL) {
       lilv_instance_connect_port(engine->host.instance, port->host_port->index, dummyAudioOutput);
@@ -83,9 +81,9 @@ void pre_run_audio_output(EnginePort *port, Engine *engine, uint64_t frame, floa
 
 void post_run_audio_output(EnginePort *port, Engine *engine) {}
 
-
-void pre_run_control_input(EnginePort *port, Engine *engine, uint64_t frame, float denom, uint64_t n_samples) {
-   LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *) port->host_port->buffer;
+void pre_run_control_input(EnginePort *port, Engine *engine, uint64_t frame, float denom,
+                           uint64_t n_samples) {
+   LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    lv2_atom_sequence_clear(aseq);
    aseq->atom.type = constants.atom_Sequence;
@@ -201,12 +199,12 @@ void pre_run_control_input(EnginePort *port, Engine *engine, uint64_t frame, flo
 }
 
 void post_run_control_input(EnginePort *port, Engine *engine) {
-   if (port->node_port->pwbuffer) pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
+   if (port->node_port->pwbuffer)
+      pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
 
-
-
-void pre_run_control_output(EnginePort *port, Engine *engine, uint64_t frame, float denom, uint64_t n_samples) {
+void pre_run_control_output(EnginePort *port, Engine *engine, uint64_t frame, float denom,
+                            uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    aseq->atom.type = constants.atom_Chunk;
@@ -251,7 +249,6 @@ void post_run_control_output(EnginePort *port, Engine *engine) {
          d->chunk->size = builder.state.offset;
       }
    }
-   if (port->node_port->pwbuffer) pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
+   if (port->node_port->pwbuffer)
+      pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
-
-

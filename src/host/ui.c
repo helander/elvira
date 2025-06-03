@@ -4,40 +4,39 @@
 #include <lv2/ui/ui.h>
 #include <suil/suil.h>
 
+#include "common/types.h"
 #include "constants.h"
 #include "utils/stb_ds.h"
-#include "common/types.h"
-//#include "ports.h"
-
+// #include "ports.h"
 
 #include <stdio.h>
 
-//#include "util.h"
+// #include "util.h"
 
-static
-EnginePort *find_engine_port(Engine *engine, uint32_t port_index) {
-    for (int n = 0; n < arrlen(engine->ports); n++ ) {                                                                                                                                        
-       EnginePort *port = &engine->ports[n];                                                                                                                                                    
-       if (!port->host_port) continue;
-       if (port->host_port->index == port_index) {                                                                                                                                                      
-          return port;                                                                                                                                                                        
-       }
-    }
-    return NULL;
+static EnginePort* find_engine_port(Engine* engine, uint32_t port_index) {
+   for (int n = 0; n < arrlen(engine->ports); n++) {
+      EnginePort* port = &engine->ports[n];
+      if (!port->host_port) continue;
+      if (port->host_port->index == port_index) {
+         return port;
+      }
+   }
+   return NULL;
 }
 
-//skall flyttas till engine_ports
-void engine_ports_write(void *const controller, const uint32_t port_index, const uint32_t buffer_size,
-                      const uint32_t protocol, const void *const buffer) {
-   Engine *engine = (Engine *)controller;
-   EnginePort *port = find_engine_port(engine, port_index);
+// skall flyttas till engine_ports
+void engine_ports_write(void* const controller, const uint32_t port_index,
+                        const uint32_t buffer_size, const uint32_t protocol,
+                        const void* const buffer) {
+   Engine* engine = (Engine*)controller;
+   EnginePort* port = find_engine_port(engine, port_index);
    if (protocol == 0U) {
-      const float value = *(const float *)buffer;
+      const float value = *(const float*)buffer;
       printf("\nWrite to control port %d value %f", port_index, value);
       fflush(stdout);
       //  do something here ...
    } else if (protocol == constants.atom_eventTransfer) {
-      const LV2_Atom *const atom = (const LV2_Atom *)buffer;
+      const LV2_Atom* const atom = (const LV2_Atom*)buffer;
       if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
          printf("\nWrite to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
          fflush(stdout);
@@ -76,16 +75,13 @@ void engine_ports_write(void *const controller, const uint32_t port_index, const
    }
 }
 
-
-
-
 uint32_t ui_port_index(void* const controller, const char* symbol) {
    printf("\nui_port_index(%s)", symbol);
    fflush(stdout);
    Engine* engine = (Engine*)controller;
 
    for (int n = 0; n < arrlen(engine->host.ports); n++) {
-      HostPort *port = &engine->host.ports[n];
+      HostPort* port = &engine->host.ports[n];
       if (!strcmp(symbol, port->name)) return port->index;
    }
 

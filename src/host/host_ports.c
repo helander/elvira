@@ -5,20 +5,20 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "constants.h"
 #include "common/types.h"
+#include "constants.h"
 #include "utils/stb_ds.h"
 #include "utils/util.h"
 
-
 void host_ports_discover(Engine *engine) {
    const LilvPlugin *plugin = engine->host.lilvPlugin;
-   //char *enginename = engine->enginename;
-/// se till att detta görs vid init av EnginePorts   memset(dummyAudioInput, 0, sizeof(dummyAudioInput));
+   // char *enginename = engine->enginename;
+   /// se till att detta görs vid init av EnginePorts   memset(dummyAudioInput, 0,
+   /// sizeof(dummyAudioInput));
    engine->host.ports = NULL;
    int n_ports = lilv_plugin_get_num_ports(plugin);
    for (int n = 0; n < n_ports; n++) {
-      HostPort *port = (HostPort *) calloc(1,sizeof(HostPort));
+      HostPort *port = (HostPort *)calloc(1, sizeof(HostPort));
       port->index = n;
 
       port->lilvPort = lilv_plugin_get_port_by_index(plugin, n);
@@ -59,6 +59,6 @@ void host_ports_discover(Engine *engine) {
          port = NULL;
          printf("\nUnsupported port type: port #%d (%s)", port->index, port->name);
       }
-      arrput(engine->host.ports,*port);
+      arrput(engine->host.ports, *port);
    }
 }

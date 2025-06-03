@@ -1,19 +1,18 @@
 #include "host.h"
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
-
 #include <lilv/lilv.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
 #include <lv2/state/state.h>
 #include <pipewire/pipewire.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "constants.h"
+#include "host_ports.h"
 #include "types.h"
 #include "utils/stb_ds.h"
-#include "host_ports.h"
 
 const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
@@ -63,8 +62,8 @@ static int on_worker(struct spa_loop *loop, bool async, uint32_t seq, const void
 static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uint32_t size,
                                           const void *data) {
    Engine *engine = (Engine *)handle;
-   pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), on_worker, 0, data, size, false,
-                  engine);
+   pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), on_worker, 0, data, size,
+                  false, engine);
    return LV2_WORKER_SUCCESS;
 }
 
@@ -105,17 +104,16 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
             const LV2_Feature *features[] = {&urid_feature, NULL};
 
             lilv_state_restore(state, engine->host.instance, NULL, NULL, 0, features);
-            printf("\nPreset with URI: %s applied\n", preset_uri);fflush(stdout);
+            printf("\nPreset with URI: %s applied\n", preset_uri);
+            fflush(stdout);
 
-        pw_thread_loop_lock(engine->node.engine_loop);
+            pw_thread_loop_lock(engine->node.engine_loop);
 
-        struct spa_dict_item items[1];
-        items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
-        pw_filter_update_properties(engine->node.filter, NULL, &SPA_DICT_INIT(items, 1));
+            struct spa_dict_item items[1];
+            items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
+            pw_filter_update_properties(engine->node.filter, NULL, &SPA_DICT_INIT(items, 1));
 
-        pw_thread_loop_unlock(engine->node.engine_loop);
-
-
+            pw_thread_loop_unlock(engine->node.engine_loop);
 
          } else {
             printf("\nNo preset to load.");
@@ -129,13 +127,12 @@ int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
    return 0;
 }
 
-
 static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
-                                  uint32_t *type) {
+                              uint32_t *type) {
    Engine *const engine = (Engine *)user_data;
    for (int n = 0; n < arrlen(engine->host.ports); n++) {
       HostPort *port = &engine->host.ports[n];
-      if (strcmp(port_symbol,port->name)) continue;
+      if (strcmp(port_symbol, port->name)) continue;
       *size = sizeof(float);
       *type = constants.forge.Float;
       return &port->current;
@@ -154,12 +151,13 @@ int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature, NULL};
 
       char preset_dir[200];
-      sprintf(preset_dir, "%s/.lv2/%s", getenv("HOME"),preset_name);
+      sprintf(preset_dir, "%s/.lv2/%s", getenv("HOME"), preset_name);
 
       // Create the preset state
       LilvState *state = lilv_state_new_from_instance(
-          engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", preset_dir, preset_dir,
-          preset_dir, port_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
+          engine->host.lilvPlugin, engine->host.instance, &constants.map, "/tmp/elvira", preset_dir,
+          preset_dir, preset_dir, port_value, engine, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
+          features);
 
       if (!state) {
          fprintf(stderr, "\nFailed to create the preset state");
@@ -203,7 +201,8 @@ int host_setup(Engine *engine) {
       engine->host.features[n_features++] = &buf_size_features[0];
       engine->host.features[n_features++] = &buf_size_features[1];
       engine->host.features[n_features++] = &buf_size_features[2];
-printf("\nlilvplugin %p",engine->host.lilvPlugin);fflush(stdout);
+      printf("\nlilvplugin %p", engine->host.lilvPlugin);
+      fflush(stdout);
       if (lilv_plugin_has_feature(engine->host.lilvPlugin, constants.worker_schedule)) {
          engine->host.work_schedule.handle = engine;
          engine->host.work_schedule.schedule_work = my_schedule_work;
@@ -253,8 +252,8 @@ printf("\nlilvplugin %p",engine->host.lilvPlugin);fflush(stdout);
       engine->host.options_feature.data = engine->host.options;
       engine->host.features[n_features++] = &engine->host.options_feature;
 
-      engine->host.instance = lilv_plugin_instantiate(engine->host.lilvPlugin,
-                                                      engine->node.samplerate, engine->host.features);
+      engine->host.instance = lilv_plugin_instantiate(
+          engine->host.lilvPlugin, engine->node.samplerate, engine->host.features);
 
       engine->host.handle = lilv_instance_get_handle(engine->host.instance);
 
