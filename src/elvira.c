@@ -6,7 +6,7 @@
 #include <pipewire/pipewire.h>
 
 #include "engine.h"
-#include "utils/constants.h"
+#include "constants.h"
 
 
 int main(int argc, char **argv) {

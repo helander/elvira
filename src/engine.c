@@ -4,12 +4,12 @@
 #include <spa/debug/types.h>
 #include <spa/pod/iter.h>
 
-#include "types.h"
-#include "host.h"
-#include "node.h"
-#include "ui.h"
-#include "stb_ds.h"
-#include "ports.h"
+#include "common/types.h"
+#include "host/host.h"
+#include "node/node.h"
+#include "host/ui.h"
+#include "utils/stb_ds.h"
+#include "engine_ports.h"
 
 
 static
@@ -128,6 +128,7 @@ static void on_filter_destroy(void *data) {
    if (engine->node.filter) pw_filter_destroy(engine->node.filter);
 }
 
+/*
 const struct pw_filter_events engine_filter_events = {
     PW_VERSION_FILTER_EVENTS,
     .process = on_process,
@@ -135,6 +136,7 @@ const struct pw_filter_events engine_filter_events = {
     .destroy = on_filter_destroy,
     .param_changed = on_param_changed,
 };
+*/
 
 void engine_defaults(Engine *engine) {
    engine->setname[0] = 0;
@@ -231,7 +233,13 @@ void engine_entry(Engine *engine) {
    fflush(stdout);
 
    host_setup(engine);
+
+   node_get_engine_filter_events()->process = on_process;
+   node_get_engine_filter_events()->command = on_command;
+   node_get_engine_filter_events()->destroy = on_filter_destroy;
+   node_get_engine_filter_events()->param_changed = on_param_changed;
    node_setup(engine);
+
    engine_ports_setup(engine);
 
    lilv_instance_activate(engine->host.instance);  // create host_activate() and call it?

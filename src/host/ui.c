@@ -5,8 +5,8 @@
 #include <suil/suil.h>
 
 #include "constants.h"
-#include "stb_ds.h"
-#include "types.h"
+#include "utils/stb_ds.h"
+#include "common/types.h"
 //#include "ports.h"
 
 

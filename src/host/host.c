@@ -12,7 +12,7 @@
 
 #include "constants.h"
 #include "types.h"
-#include "stb_ds.h"
+#include "utils/stb_ds.h"
 #include "host_ports.h"
 
 const LV2_Feature buf_size_features[3] = {

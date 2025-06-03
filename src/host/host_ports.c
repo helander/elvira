@@ -6,9 +6,9 @@
 #include <stdio.h>
 
 #include "constants.h"
-#include "types.h"
-#include "stb_ds.h"
-#include "util.h"
+#include "common/types.h"
+#include "utils/stb_ds.h"
+#include "utils/util.h"
 
 
 void host_ports_discover(Engine *engine) {

@@ -4,10 +4,18 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "stb_ds.h"
-#include "engine.h"
+#include "utils/stb_ds.h"
+//#include "engine.h"
 #include "types.h"
 
+static 
+struct pw_filter_events filter_events = {
+    PW_VERSION_FILTER_EVENTS,
+};
+
+struct pw_filter_events *node_get_engine_filter_events() {
+  return &filter_events;
+}
 
 static
 void  create_node_ports(Engine *engine) {
@@ -93,7 +101,7 @@ int node_setup(Engine *engine) {
    pw_properties_set(props, "elvira.preset", engine->preset_uri);
    pw_properties_set(props, PW_KEY_MEDIA_NAME, engine->setname);
 
-   engine->node.filter = pw_filter_new_simple(pw_thread_loop_get_loop(engine->node.engine_loop), engine->enginename, props, &engine_filter_events, engine);
+   engine->node.filter = pw_filter_new_simple(pw_thread_loop_get_loop(engine->node.engine_loop), engine->enginename, props, &filter_events, engine);
 
 
    uint8_t buffer[1024];

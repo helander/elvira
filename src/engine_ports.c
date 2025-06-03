@@ -1,4 +1,4 @@
-#include "ports.h"
+#include "engine_ports.h"
 
 #include <spa/control/control.h>
 #include <spa/control/ump-utils.h>
@@ -6,8 +6,8 @@
 #include <stdio.h>
 
 #include "constants.h"
-#include "types.h"
-#include "util.h"
+#include "common/types.h"
+#include "utils/util.h"
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
