@@ -7,11 +7,9 @@
 #include "common/types.h"
 #include "constants.h"
 #include "utils/stb_ds.h"
-// #include "ports.h"
 
 #include <stdio.h>
 
-// #include "util.h"
 
 static EnginePort* find_engine_port(Engine* engine, uint32_t port_index) {
    for (int n = 0; n < arrlen(engine->ports); n++) {
