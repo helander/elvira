@@ -5,36 +5,9 @@
 #include <gtk/gtk.h>
 #include <pipewire/pipewire.h>
 
-#include "controller/controller.h"
-#include "set.h"
+#include "engine.h"
 #include "utils/constants.h"
 
-
-
-
-static char *empty_set = "{\"set\": \"\", \"engines\": []}";
-
-char *read_stream_to_string(FILE *stream) {
-   if (!stream) return NULL;
-   size_t size = 4096, len = 0;
-   char *data = malloc(size);
-   if (!data) return NULL;
-   int c;
-   while ((c = fgetc(stream)) != EOF) {
-      if (len + 1 >= size) {
-         size *= 2;
-         char *new_data = realloc(data, size);
-         if (!new_data) {
-            free(data);
-            return NULL;
-         }
-         data = new_data;
-      }
-      data[len++] = (char)c;
-   }
-   data[len] = '\0';
-   return data;
-}
 
 int main(int argc, char **argv) {
    char lv2_path[100];
@@ -42,48 +15,62 @@ int main(int argc, char **argv) {
    setenv("LV2_PATH",lv2_path,0);
    printf("\nlv2_path [%s]",getenv("LV2_PATH"));
    fflush(stdout);
-   gtk_init(&argc, &argv);
-   pw_init(&argc, &argv);
-
-
-   constants_init();
-   controller_init();
-
-   FILE *jsonfile = NULL;
-   if (argc > 1) {
-      fprintf(stderr, "\nOpen file %s", argv[1]);
-      jsonfile = fopen(argv[1], "r");
-   } else {
-      fprintf(stderr, "\nOpen default file (elvira.json)");
-      jsonfile = fopen("elvira.json", "r");
-   }
-
-   char *json_text = NULL;
-
-   if (jsonfile == NULL) {
-      perror("\nNo file available:");
-   } else {
-      json_text = read_stream_to_string(jsonfile);
-   }
-
-   if (json_text == NULL) {
-      fprintf(stderr, "\nNo file content available, use empty set.");
-      json_text = empty_set;
-   }
 
    // Potentially used when creating presets, so create it here in case
    mkdir("/tmp/elvira", 0777);
 
-   EngineSet *engines = engineset_parse(json_text);
-   if (json_text != empty_set) free(json_text);
 
-   if (engines) {
-      controller_add(engines);
-      engineset_free(engines);
-      controller_start();
-      gtk_main();
-      pw_deinit();
-      return 0;
-   }
-   fprintf(stderr, "Failed to parse json input.\n");
+
+      Engine *engine = (Engine *)calloc(1, sizeof(Engine));
+      engine->started = false;
+      engine_defaults(engine);
+
+      int pos_arg_cnt = 0;
+      bool syntax_error = false;
+      for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i],"--showui")) {
+           engine->host.start_ui = true;
+        } else if (!strcmp(argv[i],"--latency")) {
+           if (i < argc-1) 
+              engine->node.latency_period =  atoi(argv[++i]);
+           else
+              syntax_error = true;
+        } else if (!strcmp(argv[i],"--samplerate")) {
+           if (i < argc-1) 
+              engine->node.samplerate =  atoi(argv[++i]);
+           else
+              syntax_error = true;
+        } else if (!strcmp(argv[i],"--preset")) {
+           if (i < argc-1) 
+              strcpy(engine->preset_uri,argv[++i]);
+           else
+              syntax_error = true;
+        } else {
+          if (pos_arg_cnt == 0) { 
+            if (i < argc) strcpy(engine->enginename, argv[i]);
+          } else if (pos_arg_cnt == 1) {
+            if (i < argc) strcpy(engine->plugin_uri, argv[i]);
+          }
+          pos_arg_cnt++;
+        }
+      }
+      if (pos_arg_cnt < 2 || syntax_error) {
+        fprintf(stderr,"\nUsage: engine-name plugin-uri [--showui] [--latency period] [--samplerate rate] [--preset uri]\n");
+        exit(-1);
+      }
+
+   gtk_init(&argc, &argv);
+   pw_init(&argc, &argv);
+
+   constants_init();
+
+     printf("\nnow entering engine");fflush(stdout);
+      engine_entry(engine);
+
+     printf("\nnow entering gtk loop");fflush(stdout);
+
+
+   gtk_main();
+   pw_deinit();
+   return 0;
 }

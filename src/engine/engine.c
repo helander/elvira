@@ -101,10 +101,10 @@ static void on_command(void *data, const struct spa_command *command) {
                   const char *command_string = SPA_POD_BODY(value);
                   char args[100];
                   if (sscanf(command_string, "preset %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_preset,
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_preset,
                                     0, args, strlen(args) + 1, false, engine);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_save,
+                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_save,
                                     0, args, strlen(args) + 1, false, engine);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
@@ -141,7 +141,7 @@ void engine_defaults(Engine *engine) {
    engine->enginename[0] = 0;
    engine->plugin_uri[0] = 0;
    engine->preset_uri[0] = 0;
-   engine->host.start_ui = true;
+   engine->host.start_ui = false;
    engine->node.samplerate = 48000;
    engine->node.latency_period = 512;
 }
@@ -214,14 +214,11 @@ void engine_ports_setup(Engine *engine) {
   }
 }
 
-int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                 void *user_data) {
-   Engine *engine = (Engine *)user_data;
-
+void engine_entry(Engine *engine) {
    if (engine->started) {
-      printf("\nAlready started engine %s in group %s", engine->enginename, engine->setname);
+      printf("\nAlready started engine %s", engine->enginename);
       fflush(stdout);
-      return 0;
+      return;
    }
    engine->started = true;
    engine->node.filter = NULL;
@@ -230,7 +227,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    engine->node.engine_loop = pw_thread_loop_new("engine", NULL);
    pw_thread_loop_start(engine->node.engine_loop);
 
-   printf("\nStarting engine %s in group %s\n\n", engine->enginename, engine->setname);
+   printf("\nStarting engine %s %s (%s)\n\n", engine->enginename, engine->plugin_uri, engine->preset_uri);
    fflush(stdout);
 
    host_setup(engine);
@@ -242,7 +239,7 @@ int engine_entry(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    // embed this in a function host_apply_preset (can we make host indep of engine and only
    // engine->host, we could then pass loop with the call)
    if (strlen(engine->preset_uri)) {
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.master_loop), host_on_preset, 0,
+      pw_loop_invoke(pw_thread_loop_get_loop(engine->node.engine_loop), host_on_preset, 0,
                      engine->preset_uri, strlen(engine->preset_uri), false, engine);
    }
 

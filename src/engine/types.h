@@ -55,7 +55,6 @@ struct EnginePort {
 
 
 struct Node {
-   struct pw_thread_loop *master_loop;
    struct pw_thread_loop *engine_loop;
    struct pw_filter *filter;
    int64_t clock_time;
