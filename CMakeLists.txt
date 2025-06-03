@@ -44,7 +44,6 @@ add_executable(elvira
     src/host/host_ports.c
     src/constants.c
     src/utils/stb_ds.c
-    src/utils/util.c
 )
 
 target_include_directories(elvira PRIVATE

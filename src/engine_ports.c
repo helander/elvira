@@ -7,7 +7,6 @@
 
 #include "common/types.h"
 #include "constants.h"
-#include "utils/util.h"
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
@@ -15,8 +14,6 @@ static float dummyAudioOutput[20000];
 // seq is used to pass the port index and data passes the atom
 static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_index,
                               const void *data, size_t size, void *user_data) {
-   // printf("\nPort %d send aseq",port_index);
-   // util_print_atom_sequence(aseq);
    Engine *engine = (Engine *)user_data;
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)data;
    if (engine->host.suil_instance) {
@@ -44,8 +41,6 @@ static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq, Engine *
 // seq is used to pass the port index and data passes the atom
 static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_index,
                               const void *atom, size_t size, void *user_data) {
-   // printf("\nPort %d send atom",port_index);
-   // util_print_atom(atom);
    Engine *engine = (Engine *)user_data;
    if (engine->host.suil_instance)
       suil_instance_port_event(engine->host.suil_instance, port_index, size,
@@ -147,7 +142,6 @@ void pre_run_control_input(EnginePort *port, Engine *engine, uint64_t frame, flo
       }
    }
 
-   util_print_atom_sequence(engine->enginename, "input", port->host_port->index, aseq);
 
    port->node_port->pwbuffer = pw_filter_dequeue_buffer(port->node_port->pwPort);
 
@@ -213,7 +207,6 @@ void pre_run_control_output(EnginePort *port, Engine *engine, uint64_t frame, fl
 
 void post_run_control_output(EnginePort *port, Engine *engine) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
-   util_print_atom_sequence(engine->enginename, "output", port->host_port->index, aseq);
    send_atom_sequence(port->host_port->index, aseq, engine);
    LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
    if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
