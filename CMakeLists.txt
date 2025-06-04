@@ -38,12 +38,12 @@ add_executable(elvira
     src/elvira.c
     src/engine.c
     src/engine_ports.c
-    src/node/node.c
-    src/host/host.c
-    src/host/ui.c
-    src/host/host_ports.c
+    src/node.c
+    src/host.c
+    src/ui.c
+    src/set.c
+    src/host_ports.c
     src/constants.c
-    src/utils/stb_ds.c
 )
 
 target_include_directories(elvira PRIVATE

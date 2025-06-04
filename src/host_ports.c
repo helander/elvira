@@ -7,16 +7,16 @@
 
 #include "common/types.h"
 #include "host_types.h"
+#include "host.h"
 #include "engine_types.h"
 #include "constants.h"
-#include "utils/stb_ds.h"
 
-void host_ports_discover(Engine *engine) {
-   const LilvPlugin *plugin = engine->host->lilvPlugin;
-   // char *enginename = engine->enginename;
+void host_ports_discover() {
+   const LilvPlugin *plugin = host->lilvPlugin;
    /// se till att detta görs vid init av EnginePorts   memset(dummyAudioInput, 0,
    /// sizeof(dummyAudioInput));
-   engine->host->ports = NULL;
+   //host->ports = NULL;
+   set_init(&host->ports);
    int n_ports = lilv_plugin_get_num_ports(plugin);
    for (int n = 0; n < n_ports; n++) {
       HostPort *port = (HostPort *)calloc(1, sizeof(HostPort));
@@ -28,12 +28,12 @@ void host_ports_discover(Engine *engine) {
           lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
          port->type = HOST_ATOM_INPUT;
          port->buffer = calloc(1, ATOM_BUFFER_SIZE);
-         lilv_instance_connect_port(engine->host->instance, port->index, port->buffer);
+         lilv_instance_connect_port(host->instance, port->index, port->buffer);
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.atom_AtomPort) &&
                  lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
          port->type = HOST_ATOM_OUTPUT;
          port->buffer = calloc(1, ATOM_BUFFER_SIZE);
-         lilv_instance_connect_port(engine->host->instance, port->index, port->buffer);
+         lilv_instance_connect_port(host->instance, port->index, port->buffer);
 
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_ControlPort) &&
                  lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
@@ -44,11 +44,11 @@ void host_ports_discover(Engine *engine) {
          }
          port->type = HOST_CONTROL_INPUT;
          port->current = port->dfault;
-         lilv_instance_connect_port(engine->host->instance, port->index, &port->current);
+         lilv_instance_connect_port(host->instance, port->index, &port->current);
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_ControlPort) &&
                  lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
          port->type = HOST_CONTROL_OUTPUT;
-         lilv_instance_connect_port(engine->host->instance, port->index, &port->current);
+         lilv_instance_connect_port(host->instance, port->index, &port->current);
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_AudioPort) &&
                  lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
          port->type = HOST_AUDIO_INPUT;
@@ -60,6 +60,7 @@ void host_ports_discover(Engine *engine) {
          port = NULL;
          printf("\nUnsupported port type: port #%d (%s)", port->index, port->name);
       }
-      arrput(engine->host->ports, *port);
+      //arrput(host->ports, *port);
+      set_add(&host->ports, port);
    }
 }

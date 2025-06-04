@@ -6,20 +6,21 @@
 
 #include "common/types.h"
 #include "engine_types.h"
-#include "host/host_types.h"
-#include "node/node_types.h"
+#include "host_types.h"
+#include "node_types.h"
 
 #include "engine_ports.h"
-#include "host/host.h"
-#include "host/ui.h"
-#include "node/node.h"
-#include "utils/stb_ds.h"
+#include "host.h"
+#include "ui.h"
+#include "node.h"
 
-static void process_work_responses(Engine *engine)
+
+
+static void process_work_responses()
 
 {
-   struct spa_ringbuffer *ring = &engine->host->work_response_ring;
-   uint8_t *buffer = engine->host->work_response_buffer;
+   struct spa_ringbuffer *ring = &host->work_response_ring;
+   uint8_t *buffer = host->work_response_buffer;
    uint32_t read_index;
    uint32_t write_index;
    spa_ringbuffer_get_read_index(ring, &read_index);
@@ -53,8 +54,8 @@ static void process_work_responses(Engine *engine)
          memcpy(payload + space, buffer, msg_len - space);
       }
       // printf("\nCall work_response from on_process");fflush(stdout);
-      if (engine->host->iface && engine->host->iface->work_response)
-         engine->host->iface->work_response(engine->host->handle, msg_len, payload);
+      if (host->iface && host->iface->work_response)
+         host->iface->work_response(host->handle, msg_len, payload);
 
       read_index += sizeof(uint16_t) + msg_len;
       spa_ringbuffer_read_update(ring, read_index);
@@ -63,34 +64,35 @@ static void process_work_responses(Engine *engine)
 
 static void on_process(void *userdata, struct spa_io_position *position) {
    //   printf("   ONP   ");fflush(stdout);
-   Engine *engine = userdata;
+   //Engine *engine = userdata;
 
    uint32_t n_samples = position->clock.duration;
-   uint64_t frame = engine->node->clock_time;
+   uint64_t frame = node->clock_time;
    float denom = (float)position->clock.rate.denom;
-   engine->node->clock_time += position->clock.duration;
+   node->clock_time += position->clock.duration;
 
-   for (int n = 0; n < arrlen(engine->ports); n++) {
-      EnginePort *port = &engine->ports[n];
+   EnginePort *port;
+
+   SET_FOR_EACH(EnginePort*, port, &engine_ports) {
       if (port->pre_run) {
-         port->pre_run(port, engine, frame, denom, (uint64_t)n_samples);
+         port->pre_run(port, frame, denom, (uint64_t)n_samples);
       }
    }
 
-   lilv_instance_run(engine->host->instance, n_samples);
+   lilv_instance_run(host->instance, n_samples);
 
-   process_work_responses(engine);
-   if (engine->host->iface && engine->host->iface->end_run)
-      engine->host->iface->end_run(engine->host->handle);
+   process_work_responses();
+   if (host->iface && host->iface->end_run)
+      host->iface->end_run(host->handle);
 
-   for (int n = 0; n < arrlen(engine->ports); n++) {
-      EnginePort *port = &engine->ports[n];
-      if (port->post_run) port->post_run(port, engine);
+   SET_FOR_EACH(EnginePort*, port, &engine_ports) {
+      if (port->post_run) port->post_run(port);
    }
+
 }
 
 static void on_command(void *data, const struct spa_command *command) {
-   Engine *engine = (Engine *)data;
+   //Engine *engine = (Engine *)data;
    if (SPA_NODE_COMMAND_ID(command) == SPA_NODE_COMMAND_User) {
       if (SPA_POD_TYPE(&command->pod) == SPA_TYPE_Object) {
          const struct spa_pod_object *obj = (const struct spa_pod_object *)&command->pod;
@@ -102,11 +104,11 @@ static void on_command(void *data, const struct spa_command *command) {
                   const char *command_string = SPA_POD_BODY(value);
                   char args[100];
                   if (sscanf(command_string, "preset %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop),
-                                    host_on_preset, 0, args, strlen(args) + 1, false, engine);
+                     pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop),
+                                    host_on_preset, 0, args, strlen(args) + 1, false, NULL);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), host_on_save,
-                                    0, args, strlen(args) + 1, false, engine);
+                     pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), host_on_save,
+                                    0, args, strlen(args) + 1, false, NULL);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
                   }
@@ -125,8 +127,7 @@ static void on_param_changed(void *data, void *port_data, uint32_t id,
 }
 
 static void on_filter_destroy(void *data) {
-   Engine *engine = (Engine *)data;
-   if (engine->node->filter) pw_filter_destroy(engine->node->filter);
+   if (node->filter) pw_filter_destroy(node->filter);
 }
 
 /*
@@ -139,14 +140,13 @@ const struct pw_filter_events engine_filter_events = {
 };
 */
 
-void engine_defaults(Engine *engine) {
-   engine->setname[0] = 0;
-   engine->enginename[0] = 0;
-   engine->plugin_uri[0] = 0;
-   engine->preset_uri[0] = 0;
-   engine->host->start_ui = false;
-   engine->samplerate = 48000;
-   engine->node->latency_period = 512;
+void engine_defaults() {
+   node->nodename[0] = 0;
+   host->plugin_uri[0] = 0;
+   host->preset_uri[0] = 0;
+   host->start_ui = false;
+   node->samplerate = 48000;
+   node->latency_period = 512;
 }
 
 #if 0
@@ -166,13 +166,18 @@ void node_destroy(struct node_data *node) {
 
 #endif
 
-static void engine_ports_setup(Engine *engine) {
-   engine->ports = NULL;
-   for (int n = 0; n < arrlen(engine->node->ports); n++) {
-      NodePort *node_port = &engine->node->ports[n];
+static void engine_ports_setup() {
+   //engine_ports = NULL;
+   set_init(&engine_ports);
+   NodePort *node_port;
+   SET_FOR_EACH(NodePort*, node_port, &node->ports) {
+   //for (int n = 0; n < arrlen(node->ports); n++) {
+      //NodePort *node_port = &node->ports[n];
       HostPort *host_port = NULL;
-      for (int n = 0; n < arrlen(engine->host->ports); n++) {
-         HostPort *port = &engine->host->ports[n];
+      HostPort *port;
+      SET_FOR_EACH(HostPort*, port, &host->ports) {
+      //for (int n = 0; n < arrlen(host->ports); n++) {
+         //HostPort *port = &host->ports[n];
          if (port->index == node_port->index) {
             host_port = port;
             break;
@@ -212,47 +217,42 @@ static void engine_ports_setup(Engine *engine) {
             free(engine_port);
             engine_port = NULL;
       }
-      if (engine_port) arrput(engine->ports, *engine_port);
+      //if (engine_port) arrput(engine_ports, *engine_port);
+      if (engine_port) set_add(&engine_ports, engine_port);
    }
 }
 
-void engine_entry(Engine *engine) {
-   if (engine->started) {
-      printf("\nAlready started engine %s", engine->enginename);
-      fflush(stdout);
-      return;
-   }
-   engine->started = true;
-   engine->node->filter = NULL;
-   engine->host->lilv_preset = NULL;
-   engine->host->suil_instance = NULL;
-   engine->node->engine_loop = pw_thread_loop_new("engine", NULL);
-   pw_thread_loop_start(engine->node->engine_loop);
+void engine_entry() {
+   node->filter = NULL;
+   host->lilv_preset = NULL;
+   host->suil_instance = NULL;
+   node->engine_loop = pw_thread_loop_new("engine", NULL);
+   pw_thread_loop_start(node->engine_loop);
 
-   printf("\nStarting engine %s %s (%s)\n\n", engine->enginename, engine->plugin_uri,
-          engine->preset_uri);
+   printf("\nStarting engine %s %s (%s)\n\n", node->nodename, host->plugin_uri,
+          host->preset_uri);
    fflush(stdout);
 
-   host_setup(engine);
+   host_setup();
 
    node_get_engine_filter_events()->process = on_process;
    node_get_engine_filter_events()->command = on_command;
    node_get_engine_filter_events()->destroy = on_filter_destroy;
    node_get_engine_filter_events()->param_changed = on_param_changed;
-   node_setup(engine);
+   node_setup();
 
-   engine_ports_setup(engine);
+   engine_ports_setup();
 
-   lilv_instance_activate(engine->host->instance);  // create host_activate() and call it?
+   lilv_instance_activate(host->instance);  // create host_activate() and call it?
 
    // embed this in a function host_apply_preset (can we make host indep of engine and only
-   // engine->host, we could then pass loop with the call)
-   if (strlen(engine->preset_uri)) {
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), host_on_preset, 0,
-                     engine->preset_uri, strlen(engine->preset_uri), false, engine);
+   // host, we could then pass loop with the call)
+   if (strlen(host->preset_uri)) {
+      pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), host_on_preset, 0,
+                     host->preset_uri, strlen(host->preset_uri), false, NULL);
    }
 
-   if (engine->host->start_ui)
-      pw_loop_invoke(pw_thread_loop_get_loop(engine->node->engine_loop), pluginui_on_start, 0, NULL,
-                     0, false, engine);
+   if (host->start_ui)
+      pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), pluginui_on_start, 0, NULL,
+                     0, false, NULL);
 }

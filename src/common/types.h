@@ -34,13 +34,13 @@ typedef struct EnginePort EnginePort;
 //
 
 struct Engine {
-   bool started;
-   char setname[50];
-   char enginename[50];
-   char plugin_uri[200];
-   char preset_uri[200];
-   int samplerate;
-   Node *node;
-   Host *host;
+//   bool started;
+//   char setname[50];
+//   char enginename[50];
+//   char plugin_uri[200];
+//   char preset_uri[200];
+//   int samplerate;
+//   Node *node;
+//   Host *host;
    EnginePort *ports;
 };

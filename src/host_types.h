@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "set.h"
 
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
@@ -39,7 +40,11 @@ struct Host {
    int32_t block_length;
    bool start_ui;
    SuilInstance *suil_instance;
-   HostPort *ports;
+
+   char plugin_uri[200];
+   char preset_uri[200];
+   //HostPort *ports;
+   Set ports;
 };
 
 typedef enum {

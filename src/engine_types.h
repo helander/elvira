@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/types.h"
-#include "node/node_types.h"
-#include "host/host_types.h"
+#include "node_types.h"
+#include "host_types.h"
 
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
@@ -37,9 +37,9 @@ struct EnginePort {
    EnginePortType type;
    HostPort *host_port;
    NodePort *node_port;
-   void (*pre_run)(EnginePort *port, Engine *engine, uint64_t frame, float denom,
+   void (*pre_run)(EnginePort *port, uint64_t frame, float denom,
                    uint64_t n_samples);
-   void (*post_run)(EnginePort *port, Engine *engine);
+   void (*post_run)(EnginePort *port);
    struct spa_ringbuffer ring;  //  not used by all
    uint8_t *ringbuffer;         //  not used by all
 };

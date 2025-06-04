@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "set.h"
 
 
 //#include <lilv/lilv.h>
@@ -24,12 +25,14 @@
 
 
 struct Node {
+   char nodename[50];
    struct pw_thread_loop *engine_loop;
    struct pw_filter *filter;
    int64_t clock_time;
-//   int samplerate;
+   int samplerate;
    int latency_period;
-   NodePort *ports;
+   //NodePort *ports;
+   Set  ports;
 };
 
 

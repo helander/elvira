@@ -7,8 +7,10 @@
 
 #include "constants.h"
 #include "engine_types.h"
-#include "node/node_types.h"
-#include "host/host_types.h"
+#include "node_types.h"
+#include "host_types.h"
+#include "node.h"
+#include "host.h"
 #include "engine.h"
 
 Engine engine = {0};
@@ -23,36 +25,39 @@ int main(int argc, char **argv) {
    // Potentially used when creating presets, so create it here in case
    mkdir("/tmp/elvira", 0777);
 
-   engine.host = (Host *)calloc(1, sizeof(Host));
-   engine.node = (Node *)calloc(1, sizeof(Node));
-   engine.started = false;
-   engine_defaults(&engine);
+   //engine.host = (Host *)calloc(1, sizeof(Host));
+   //engine.node = (Node *)calloc(1, sizeof(Node));
+   //engine.started = false;
+   engine_defaults();
 
    int pos_arg_cnt = 0;
    bool syntax_error = false;
    for (int i = 1; i < argc; i++) {
       if (!strcmp(argv[i], "--showui")) {
-         engine.host->start_ui = true;
+         host->start_ui = true;
       } else if (!strcmp(argv[i], "--latency")) {
          if (i < argc - 1)
-            engine.node->latency_period = atoi(argv[++i]);
+            node->latency_period = atoi(argv[++i]);
          else
             syntax_error = true;
       } else if (!strcmp(argv[i], "--samplerate")) {
          if (i < argc - 1)
-            engine.samplerate = atoi(argv[++i]);
+            node->samplerate = atoi(argv[++i]);
          else
             syntax_error = true;
       } else if (!strcmp(argv[i], "--preset")) {
          if (i < argc - 1)
-            strcpy(engine.preset_uri, argv[++i]);
+            strcpy(host->preset_uri, argv[++i]);
          else
             syntax_error = true;
       } else {
          if (pos_arg_cnt == 0) {
-            if (i < argc) strcpy(engine.enginename, argv[i]);
+            if (i < argc) 
+               strcpy(node->nodename, argv[i]);
+            else
+               syntax_error = true;
          } else if (pos_arg_cnt == 1) {
-            if (i < argc) strcpy(engine.plugin_uri, argv[i]);
+             strcpy(host->plugin_uri, argv[i]);
          }
          pos_arg_cnt++;
       }
@@ -71,7 +76,7 @@ int main(int argc, char **argv) {
 
    printf("\nnow entering engine");
    fflush(stdout);
-   engine_entry(&engine);
+   engine_entry();
 
    printf("\nnow entering gtk loop");
    fflush(stdout);
