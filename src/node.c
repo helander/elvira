@@ -4,37 +4,32 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-//#include "engine_types.h"
-#include "runtime.h"
 #include "handler.h"
 #include "host.h"
+#include "runtime.h"
 
 static Node the_node;
 
 Node *node = &the_node;
 
 static struct pw_filter_events filter_events = {
-    PW_VERSION_FILTER_EVENTS,
-    .process=on_process,
-    .param_changed=on_param_changed,
-    .command=on_command,
-    .destroy=on_destroy,
-/*
-    .state_changed=on_state_changed,
-    .io_changed=on_io_changed,
-    .add_buffer=on_add_buffer,
-    .remove_buffer=on_remove_buffer,
-    .drained=on_drained,
-*/
+    PW_VERSION_FILTER_EVENTS, .process = on_process, .param_changed = on_param_changed,
+    .command = on_command,    .destroy = on_destroy,
+    /*
+        .state_changed=on_state_changed,
+        .io_changed=on_io_changed,
+        .add_buffer=on_add_buffer,
+        .remove_buffer=on_remove_buffer,
+        .drained=on_drained,
+    */
 };
 
-struct pw_filter_events *node_get_engine_filter_events() { return &filter_events; }
+// struct pw_filter_events *node_get_engine_filter_events() { return &filter_events; }
 
 static void create_node_ports() {
-   //node->ports = NULL;
    set_init(&node->ports);
    HostPort *host_port;
-   SET_FOR_EACH(HostPort*, host_port, &host->ports) {
+   SET_FOR_EACH(HostPort *, host_port, &host->ports) {
       NodePort *node_port = (NodePort *)calloc(1, sizeof(NodePort));
       node_port->index = host_port->index;
       switch (host_port->type) {
@@ -96,9 +91,8 @@ static void create_node_ports() {
             free(node_port);
             node_port = NULL;
       }
-      //if (node_port) arrput(node->ports, *node_port);
       if (node_port) {
-        set_add(&node->ports, node_port);
+         set_add(&node->ports, node_port);
       }
    }
 }
@@ -108,7 +102,7 @@ int node_setup() {
 
    sprintf(latency, "%d/%d", config_latency_period, config_samplerate);
 
-   // Create pw engine loop resources. Lock the engine loop
+   // Create pw resources. Lock the  loop
    pw_thread_loop_lock(runtime_primary_event_loop);
 
    struct pw_properties *props;
@@ -118,7 +112,7 @@ int node_setup() {
    pw_properties_set(props, "elvira.preset", config_preset_uri);
 
    node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
-                                              config_nodename, props, &filter_events, node);
+                                       config_nodename, props, &filter_events, node);
 
    uint8_t buffer[1024];
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));

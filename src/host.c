@@ -10,21 +10,19 @@
 #include <stdlib.h>
 
 #include "constants.h"
-//#include "engine_types.h"
-#include "runtime.h"
-#include "node.h"
 #include "handler.h"
+#include "node.h"
+#include "runtime.h"
 
 static Host the_host;
 
 Host *host = &the_host;
 
-const LV2_Feature buf_size_features[3] = {
+static const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__powerOf2BlockLength, NULL},
     {LV2_BUF_SIZE__fixedBlockLength, NULL},
     {LV2_BUF_SIZE__boundedBlockLength, NULL},
 };
-
 
 static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uint32_t size,
                                           const void *data) {
@@ -49,7 +47,6 @@ static void load_plugin() {
    host->lilvPlugin = plugin;
 }
 
-
 int host_setup() {
    constants_init();
    load_plugin();
@@ -67,8 +64,6 @@ int host_setup() {
       host->features[n_features++] = &buf_size_features[0];
       host->features[n_features++] = &buf_size_features[1];
       host->features[n_features++] = &buf_size_features[2];
-      printf("\nlilvplugin %p", host->lilvPlugin);
-      fflush(stdout);
       if (lilv_plugin_has_feature(host->lilvPlugin, constants.worker_schedule)) {
          host->work_schedule.handle = host;
          host->work_schedule.schedule_work = my_schedule_work;
@@ -91,13 +86,12 @@ int host_setup() {
                                sizeof(int32_t),
                                constants.atom_Int,
                                &max_block_length};
-      host->options[2] =
-          (LV2_Options_Option){LV2_OPTIONS_INSTANCE,
-                               0,
-                               constants_map(constants, LV2_BUF_SIZE__sequenceSize),
-                               sizeof(int32_t),
-                               constants.atom_Int,
-                               &seq_size};
+      host->options[2] = (LV2_Options_Option){LV2_OPTIONS_INSTANCE,
+                                              0,
+                                              constants_map(constants, LV2_BUF_SIZE__sequenceSize),
+                                              sizeof(int32_t),
+                                              constants.atom_Int,
+                                              &seq_size};
       host->options[3] = (LV2_Options_Option){
           LV2_OPTIONS_INSTANCE,
           0,
@@ -105,21 +99,19 @@ int host_setup() {
           sizeof(int32_t),
           constants.atom_Int,
           &host->block_length};
-      host->options[4] =
-          (LV2_Options_Option){LV2_OPTIONS_INSTANCE,
-                               0,
-                               constants_map(constants, LV2_PARAMETERS__sampleRate),
-                               sizeof(float),
-                               constants.atom_Float,
-                               &fsample_rate};
+      host->options[4] = (LV2_Options_Option){LV2_OPTIONS_INSTANCE,
+                                              0,
+                                              constants_map(constants, LV2_PARAMETERS__sampleRate),
+                                              sizeof(float),
+                                              constants.atom_Float,
+                                              &fsample_rate};
       host->options[5] = (LV2_Options_Option){LV2_OPTIONS_INSTANCE, 0, 0, 0, 0, NULL};
 
       host->options_feature.URI = LV2_OPTIONS__options;
       host->options_feature.data = host->options;
       host->features[n_features++] = &host->options_feature;
 
-      host->instance = lilv_plugin_instantiate(
-          host->lilvPlugin, config_samplerate, host->features);
+      host->instance = lilv_plugin_instantiate(host->lilvPlugin, config_samplerate, host->features);
 
       host->handle = lilv_instance_get_handle(host->instance);
 
@@ -136,30 +128,11 @@ int host_setup() {
 
    spa_ringbuffer_init(&host->work_response_ring);
 
-
    return 0;
 }
 
-/*
-#include "host_ports.h"
-
-#include <spa/control/control.h>
-#include <spa/control/ump-utils.h>
-#include <spa/pod/builder.h>
-#include <stdio.h>
-
-#include "types.h"
-#include "host_types.h"
-#include "host.h"
-#include "engine_types.h"
-#include "constants.h"
-*/
-
 void host_ports_discover() {
    const LilvPlugin *plugin = host->lilvPlugin;
-   /// se till att detta görs vid init av EnginePorts   memset(dummyAudioInput, 0,
-   /// sizeof(dummyAudioInput));
-   //host->ports = NULL;
    set_init(&host->ports);
    int n_ports = lilv_plugin_get_num_ports(plugin);
    for (int n = 0; n < n_ports; n++) {
@@ -204,7 +177,6 @@ void host_ports_discover() {
          port = NULL;
          printf("\nUnsupported port type: port #%d (%s)", port->index, port->name);
       }
-      //arrput(host->ports, *port);
       set_add(&host->ports, port);
    }
 }

@@ -1,13 +1,11 @@
-#include "handler.h"
-
-#include "host.h"
-
 #include <lilv/lilv.h>
 #include <lv2/state/state.h>
-#include "runtime.h"
-#include "node.h"
 
 #include "constants.h"
+#include "handler.h"
+#include "host.h"
+#include "node.h"
+#include "runtime.h"
 
 static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
                                             const void *data) {
@@ -40,17 +38,13 @@ static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, co
 }
 
 int on_host_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                     void *user_data) {
-   LV2_Worker_Status status =
-       host->iface->work(host->handle, the_worker_respond, host, size, data);
+                   void *user_data) {
+   LV2_Worker_Status status = host->iface->work(host->handle, the_worker_respond, host, size, data);
    return status;
 }
 
-
 int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                    void *user_data) {
-   //Engine *engine = (Engine *)user_data;
-
    char *preset_uri = (char *)data;
 
    if (strlen(preset_uri)) {
@@ -93,11 +87,8 @@ int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
 
 static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
                               uint32_t *type) {
-   //Engine *const engine = (Engine *)user_data;
-
-
    HostPort *port;
-   SET_FOR_EACH(HostPort*, port, &host->ports) {
+   SET_FOR_EACH(HostPort *, port, &host->ports) {
       if (strcmp(port_symbol, port->name)) continue;
       *size = sizeof(float);
       *type = constants.forge.Float;
@@ -110,20 +101,16 @@ static const void *port_value(const char *port_symbol, void *user_data, uint32_t
 
 int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                  void *user_data) {
-   //Engine *engine = (Engine *)user_data;
    char *preset_name = (char *)data;
-
    if (strlen(preset_name)) {
       const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature, NULL};
-
       char preset_dir[200];
       sprintf(preset_dir, "%s/.lv2/%s", getenv("HOME"), preset_name);
 
       // Create the preset state
       LilvState *state = lilv_state_new_from_instance(
-          host->lilvPlugin, host->instance, &constants.map, "/tmp/elvira", preset_dir,
-          preset_dir, preset_dir, port_value, host, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
-          features);
+          host->lilvPlugin, host->instance, &constants.map, "/tmp/elvira", preset_dir, preset_dir,
+          preset_dir, port_value, host, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
 
       if (!state) {
          fprintf(stderr, "\nFailed to create the preset state");
@@ -132,8 +119,8 @@ int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
 
       char preset_uri[200];
 
-      sprintf(preset_uri, "%s/preset/%s",
-              lilv_node_as_uri(lilv_plugin_get_uri(host->lilvPlugin)), preset_name);
+      sprintf(preset_uri, "%s/preset/%s", lilv_node_as_uri(lilv_plugin_get_uri(host->lilvPlugin)),
+              preset_name);
 
       // Save the created preset on filesystem
       lilv_state_save(constants.world, &constants.map, &constants.unmap, state, preset_uri,
@@ -150,4 +137,3 @@ int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
    }
    return 0;
 }
-

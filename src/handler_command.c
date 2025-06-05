@@ -1,14 +1,9 @@
+#include <spa/pod/iter.h>
 
 #include "handler.h"
-
-#include <spa/pod/iter.h>
 #include "runtime.h"
 
-
-
-
 void on_command(void *data, const struct spa_command *command) {
-   //Engine *engine = (Engine *)data;
    if (SPA_NODE_COMMAND_ID(command) == SPA_NODE_COMMAND_User) {
       if (SPA_POD_TYPE(&command->pod) == SPA_TYPE_Object) {
          const struct spa_pod_object *obj = (const struct spa_pod_object *)&command->pod;
@@ -23,8 +18,8 @@ void on_command(void *data, const struct spa_command *command) {
                      pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop),
                                     on_host_preset, 0, args, strlen(args) + 1, false, NULL);
                   } else if (sscanf(command_string, "save %s", args) == 1) {
-                     pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_host_save,
-                                    0, args, strlen(args) + 1, false, NULL);
+                     pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop),
+                                    on_host_save, 0, args, strlen(args) + 1, false, NULL);
                   } else {
                      printf("\nUnknown command [%s]", command_string);
                   }
@@ -34,4 +29,3 @@ void on_command(void *data, const struct spa_command *command) {
       }
    }
 }
-

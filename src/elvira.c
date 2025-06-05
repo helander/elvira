@@ -5,64 +5,39 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "node.h"
-#include "runtime.h"
-#include "host.h"
-
-
-
-
 #include "handler.h"
-//#include "engine_types.h"
-#include "ports.h"
 #include "host.h"
 #include "node.h"
-
+#include "ports.h"
 #include "runtime.h"
-#include "ui.h"
 
-#include <lilv/lilv.h>
-#include <set.h>
-
-
-static
-void startup() {
+static void startup() {
    node->filter = NULL;
    host->lilv_preset = NULL;
    host->suil_instance = NULL;
-   printf("\nStarting engine %s %s (%s)\n\n", config_nodename, config_plugin_uri,config_preset_uri);fflush(stdout);
+   printf("\nStarting engine %s %s (%s)\n\n", config_nodename, config_plugin_uri,
+          config_preset_uri);
+   fflush(stdout);
    pw_thread_loop_start(runtime_primary_event_loop);
    pw_thread_loop_start(runtime_worker_event_loop);
 
-   printf("\nhost_setup()");fflush(stdout);
-
    host_setup();
 
-   printf("\nnode_setup()");fflush(stdout);
    node_setup();
 
-   printf("\nports_setup()");fflush(stdout);
    ports_setup();
 
-   lilv_instance_activate(host->instance);  // create host_activate() and call it?
+   lilv_instance_activate(host->instance);
 
-   // embed this in a function host_apply_preset (can we make host indep of engine and only
-   // host, we could then pass loop with the call)
    if (config_preset_uri) {
       pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_host_preset, 0,
                      config_preset_uri, strlen(config_preset_uri), false, NULL);
    }
 
    if (config_show_ui)
-      pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), pluginui_on_start, 0, NULL,
-                     0, false, NULL);
+      pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_ui_start, 0, NULL, 0,
+                     false, NULL);
 }
-
-
-
-
-
-
 
 int main(int argc, char **argv) {
    char lv2_path[100];
@@ -73,9 +48,6 @@ int main(int argc, char **argv) {
 
    // Potentially used when creating presets, so create it here in case
    mkdir("/tmp/elvira", 0777);
-
-   //engine_defaults();
-
 
    int pos_arg_cnt = 0;
    bool syntax_error = false;
@@ -99,12 +71,12 @@ int main(int argc, char **argv) {
             syntax_error = true;
       } else {
          if (pos_arg_cnt == 0) {
-            if (i < argc) 
+            if (i < argc)
                config_nodename = strdup(argv[i]);
             else
                syntax_error = true;
          } else if (pos_arg_cnt == 1) {
-             config_plugin_uri = strdup(argv[i]);
+            config_plugin_uri = strdup(argv[i]);
          }
          pos_arg_cnt++;
       }
@@ -117,18 +89,13 @@ int main(int argc, char **argv) {
       exit(-1);
    }
 
-   printf("\ngtk_init()");fflush(stdout);
    gtk_init(&argc, &argv);
-   printf("\npw_init()");fflush(stdout);
    pw_init(&argc, &argv);
-   printf("\nruntime_init()");fflush(stdout);
    runtime_init();
-   printf("\nstartup()");fflush(stdout);
    startup();
-   printf("\ngtk_main()");fflush(stdout);
 
-   gtk_main();
-   printf("\npw_deinit()");fflush(stdout);
+   gtk_main();  // Here we spend the time in the main thread
+
    pw_deinit();
    return 0;
 }

@@ -1,38 +1,20 @@
 #pragma once
 
+#include <lilv/lilv.h>
+#include <lv2/atom/atom.h>
 #include <lv2/options/options.h>
+#include <lv2/worker/worker.h>
 #include <spa/utils/ringbuffer.h>
 #include <suil/suil.h>
 
-#include <lilv/lilv.h>
-#include <lv2/atom/atom.h>
-#include <lv2/worker/worker.h>
 #include "set.h"
-/*
-#include <pipewire/pipewire.h>
 
-//#include "types.h"
-
-
-//#include "types.h"
-
-#include <stdbool.h>
-#include <stdint.h>
-*/
-                                                                                                                                                                                                   
-#define ATOM_BUFFER_SIZE 16 * 1024                                                                                                                                                                 
-                                                                                                                                                                                               
+#define ATOM_BUFFER_SIZE 16 * 1024
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
 
-
 typedef struct Host Host;
 typedef struct HostPort HostPort;
-
-extern Host *host;
-
-
-
 
 struct Host {
    const LilvPlugin *lilvPlugin;  // byt namn till lilv_plugin
@@ -49,12 +31,12 @@ struct Host {
    struct spa_ringbuffer work_response_ring;
    uint8_t work_response_buffer[WORK_RESPONSE_RINGBUFFER_SIZE];
    int32_t block_length;
-   //bool start_ui;
+   // bool start_ui;
    SuilInstance *suil_instance;
 
-   //char plugin_uri[200];
-   //char preset_uri[200];
-   //HostPort *ports;
+   // char plugin_uri[200];
+   // char preset_uri[200];
+   // HostPort *ports;
    Set ports;
 };
 
@@ -82,3 +64,5 @@ struct HostPort {
 
 extern int host_setup();
 extern void host_ports_discover();
+
+extern Host *host;

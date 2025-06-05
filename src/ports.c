@@ -5,59 +5,30 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "runtime.h"
-#include "types.h"
 #include "constants.h"
+#include "handler.h"
 #include "host.h"
 #include "node.h"
+#include "runtime.h"
 #include "set.h"
+#include "types.h"
 
 Set ports;
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
 
-// seq is used to pass the port index and data passes the atom
-static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_index,
-                              const void *data, size_t size, void *user_data) {
-   LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)data;
-   if (host->suil_instance) {
-      LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
-      if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
-         long payloadSize = aseq->atom.size;
-         while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
-            suil_instance_port_event(host->suil_instance, port_index, aev->body.size,
-                                     constants.atom_eventTransfer, &aev->body);
-            int eventSize =
-                lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
-            char *next = ((char *)aev) + eventSize;
-            payloadSize = payloadSize - eventSize;
-            aev = (LV2_Atom_Event *)next;
-         }
-      }
-   }
-}
-
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq) {
-   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_aseq, port_index,
-                  aseq, aseq->atom.size + sizeof(LV2_Atom), false, NULL);
-}
-
-// seq is used to pass the port index and data passes the atom
-static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_index,
-                              const void *atom, size_t size, void *user_data) {
-   if (host->suil_instance)
-      suil_instance_port_event(host->suil_instance, port_index, size,
-                               constants.atom_eventTransfer, atom);
+   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_aseq,
+                  port_index, aseq, aseq->atom.size + sizeof(LV2_Atom), false, NULL);
 }
 
 static void send_atom(int port_index, LV2_Atom *atom) {
-   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_atom, port_index,
-                  atom, atom->size + sizeof(LV2_Atom), false, NULL);
+   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_atom,
+                  port_index, atom, atom->size + sizeof(LV2_Atom), false, NULL);
 }
 
-void pre_run_audio_input(Port *port, uint64_t frame, float denom,
-                         uint64_t n_samples) {
+void pre_run_audio_input(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    float *inp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (inp == NULL) {
       lilv_instance_connect_port(host->instance, port->host_port->index, dummyAudioInput);
@@ -68,8 +39,7 @@ void pre_run_audio_input(Port *port, uint64_t frame, float denom,
 
 void post_run_audio_input(Port *port) {}
 
-void pre_run_audio_output(Port *port, uint64_t frame, float denom,
-                          uint64_t n_samples) {
+void pre_run_audio_output(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    float *outp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (outp == NULL) {
       lilv_instance_connect_port(host->instance, port->host_port->index, dummyAudioOutput);
@@ -80,8 +50,7 @@ void pre_run_audio_output(Port *port, uint64_t frame, float denom,
 
 void post_run_audio_output(Port *port) {}
 
-void pre_run_control_input(Port *port, uint64_t frame, float denom,
-                           uint64_t n_samples) {
+void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    lv2_atom_sequence_clear(aseq);
@@ -141,11 +110,8 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom,
          break;  // limit to one message per run
          //        spa_ringbuffer_get_read_index(&port->ring, &read_index);
          //        spa_ringbuffer_get_write_index(&port->ring, &write_index);
-         // printf("\nafter read update write index %x   read_index
-         // %x",write_index,read_index);fflush(stdout);
       }
    }
-
 
    port->node_port->pwbuffer = pw_filter_dequeue_buffer(port->node_port->pwPort);
 
@@ -191,8 +157,6 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom,
       }
    } else {
       pw_log_error("No pod for port %d", port->host_port->index);
-      printf("No pod for port %d", port->host_port->index);
-      fflush(stdout);
    }
 }
 
@@ -201,8 +165,7 @@ void post_run_control_input(Port *port) {
       pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
 
-void pre_run_control_output(Port *port, uint64_t frame, float denom,
-                            uint64_t n_samples) {
+void pre_run_control_output(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
    aseq->atom.type = constants.atom_Chunk;
@@ -234,7 +197,6 @@ void post_run_control_output(Port *port) {
             spa_pod_builder_control(&builder, 0, SPA_CONTROL_Midi);
             spa_pod_builder_bytes(&builder, mididata, aev->body.size);
          }
-         // send_atom(port->host_port->index,&aev->body, engine);
          int eventSize =
              lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
          char *next = ((char *)aev) + eventSize;
@@ -250,21 +212,19 @@ void post_run_control_output(Port *port) {
       pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
 
-
 void ports_setup() {
+   memset(dummyAudioInput, 0, sizeof(dummyAudioInput));
    set_init(&ports);
    NodePort *node_port;
-   SET_FOR_EACH(NodePort*, node_port, &node->ports) {
+   SET_FOR_EACH(NodePort *, node_port, &node->ports) {
       HostPort *host_port = NULL;
       HostPort *hport;
-      SET_FOR_EACH(HostPort*, hport, &host->ports) {
+      SET_FOR_EACH(HostPort *, hport, &host->ports) {
          if (hport->index == node_port->index) {
             host_port = hport;
             break;
          }
       }
-      printf("\nEP %s %d", host_port->name, node_port->type);
-      fflush(stdout);
       Port *port = (Port *)calloc(1, sizeof(Port));
       port->host_port = host_port;
       port->node_port = node_port;
@@ -301,3 +261,61 @@ void ports_setup() {
    }
 }
 
+static Port *find_port(uint32_t port_index) {
+   Port *port;
+   SET_FOR_EACH(Port *, port, &ports) {
+      if (!port->host_port) continue;
+      if (port->host_port->index == port_index) {
+         return port;
+      }
+   }
+   return NULL;
+}
+
+void ports_write(void *const controller, const uint32_t port_index, const uint32_t buffer_size,
+                 const uint32_t protocol, const void *const buffer) {
+   Port *port = find_port(port_index);
+   if (protocol == 0U) {
+      const float value = *(const float *)buffer;
+      printf("\nWrite to control port %d value %f", port_index, value);
+      fflush(stdout);
+      //  do something here ...
+   } else if (protocol == constants.atom_eventTransfer) {
+      const LV2_Atom *const atom = (const LV2_Atom *)buffer;
+      if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
+         printf("\nWrite to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
+         fflush(stdout);
+      } else {
+         // printf("\n[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
+         //        engine->enginename, port_index, buffer_size, atom->size, atom->type,
+         //        constants_unmap(constants, atom->type));
+         // fflush(stdout);
+
+         uint16_t len = buffer_size;
+         if (buffer_size > MAX_ATOM_MESSAGE_SIZE) {
+            fprintf(stderr, "Payload too large\n");
+         } else {
+            uint8_t temp[MAX_ATOM_MESSAGE_SIZE + sizeof(uint16_t)];
+            memcpy(temp, &len, sizeof(uint16_t));
+            memcpy(temp + sizeof(uint16_t), buffer, len);
+            uint32_t total_len = len + sizeof(uint16_t);
+
+            uint32_t write_index;
+            spa_ringbuffer_get_write_index(&port->ring, &write_index);
+
+            uint32_t ring_offset = write_index & (ATOM_RINGBUFFER_SIZE - 1);
+            uint32_t space = ATOM_RINGBUFFER_SIZE - ring_offset;
+
+            if (space >= total_len) {
+               memcpy(port->ringbuffer + ring_offset, temp, total_len);
+            } else {
+               // Wrap around
+               memcpy(port->ringbuffer + ring_offset, temp, space);
+               memcpy(port->ringbuffer, temp + space, total_len - space);
+            }
+
+            spa_ringbuffer_write_update(&port->ring, write_index + total_len);
+         }
+      }
+   }
+}

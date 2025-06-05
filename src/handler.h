@@ -1,15 +1,25 @@
 #include <pipewire/pipewire.h>
 
-extern void on_destroy (void *data);
-extern void on_state_changed (void *data, enum pw_filter_state old, enum pw_filter_state state, const char *error);
-extern void on_io_changed (void *data, void *port_data, uint32_t id, void *area, uint32_t size);
-extern void on_param_changed (void *data, void *port_data, uint32_t id, const struct spa_pod *param);
-extern void on_add_buffer (void *data, void *port_data, struct pw_buffer *buffer);
-extern void on_remove_buffer (void *data, void *port_data, struct pw_buffer *buffer);
-extern void on_process (void *data, struct spa_io_position *position);
-extern void on_drained (void *data);
-extern void on_command (void *data, const struct spa_command *command);
+extern void on_destroy(void *data);
+extern void on_state_changed(void *data, enum pw_filter_state old, enum pw_filter_state state,
+                             const char *error);
+extern void on_io_changed(void *data, void *port_data, uint32_t id, void *area, uint32_t size);
+extern void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa_pod *param);
+extern void on_add_buffer(void *data, void *port_data, struct pw_buffer *buffer);
+extern void on_remove_buffer(void *data, void *port_data, struct pw_buffer *buffer);
+extern void on_process(void *data, struct spa_io_position *position);
+extern void on_drained(void *data);
+extern void on_command(void *data, const struct spa_command *command);
 
-extern int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size, void *user_data);
-extern int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size, void *user_data);
-extern int on_host_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size, void *user_data);
+extern int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                          size_t size, void *user_data);
+extern int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                        size_t size, void *user_data);
+extern int on_host_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                          size_t size, void *user_data);
+extern int on_ui_start(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                       size_t size, void *user_data);
+extern int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                              size_t size, void *user_data);
+extern int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                              size_t size, void *user_data);

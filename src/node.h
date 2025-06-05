@@ -1,14 +1,9 @@
 #pragma once
 
-
-
-#include "set.h"
-
-
 #include <pipewire/filter.h>
 #include <pipewire/pipewire.h>
-//#include <stdbool.h>
-//#include <stdint.h>
+
+#include "set.h"
 
 typedef struct Node Node;
 typedef struct NodePort NodePort;
@@ -16,9 +11,8 @@ typedef struct NodePort NodePort;
 struct Node {
    struct pw_filter *filter;
    int64_t clock_time;
-   Set  ports;
+   Set ports;
 };
-
 
 typedef enum {
    NODE_NONE,
@@ -35,8 +29,7 @@ struct NodePort {
    struct pw_buffer *pwbuffer;
 };
 
-
-extern Node *node;
-
 extern struct pw_filter_events *node_get_engine_filter_events();
 extern int node_setup();
+
+extern Node *node;

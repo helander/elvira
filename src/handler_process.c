@@ -1,16 +1,9 @@
-
 #include "handler.h"
-
-
-#include "ports.h"
 #include "host.h"
 #include "node.h"
+#include "ports.h"
 
-
-
-static void process_work_responses()
-
-{
+static void process_work_responses() {
    struct spa_ringbuffer *ring = &host->work_response_ring;
    uint8_t *buffer = host->work_response_buffer;
    uint32_t read_index;
@@ -55,8 +48,6 @@ static void process_work_responses()
 }
 
 void on_process(void *userdata, struct spa_io_position *position) {
-   //   printf("   ONP   ");fflush(stdout);
-
    uint32_t n_samples = position->clock.duration;
    uint64_t frame = node->clock_time;
    float denom = (float)position->clock.rate.denom;
@@ -64,7 +55,7 @@ void on_process(void *userdata, struct spa_io_position *position) {
 
    Port *port;
 
-   SET_FOR_EACH(Port*, port, &ports) {
+   SET_FOR_EACH(Port *, port, &ports) {
       if (port->pre_run) {
          port->pre_run(port, frame, denom, (uint64_t)n_samples);
       }
@@ -73,12 +64,9 @@ void on_process(void *userdata, struct spa_io_position *position) {
    lilv_instance_run(host->instance, n_samples);
 
    process_work_responses();
-   if (host->iface && host->iface->end_run)
-      host->iface->end_run(host->handle);
+   if (host->iface && host->iface->end_run) host->iface->end_run(host->handle);
 
-   SET_FOR_EACH(Port*, port, &ports) {
+   SET_FOR_EACH(Port *, port, &ports) {
       if (port->post_run) port->post_run(port);
    }
-
 }
-

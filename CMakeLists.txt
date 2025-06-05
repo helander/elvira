@@ -39,13 +39,13 @@ add_executable(elvira
     src/ports.c
     src/node.c
     src/host.c
-    src/ui.c
     src/set.c
     src/handler_process.c
     src/handler_destroy.c
     src/handler_param.c
     src/handler_command.c
     src/handler_host.c
+    src/handler_ui.c
     src/constants.c
     src/runtime.c
 )

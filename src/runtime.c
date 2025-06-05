@@ -1,7 +1,7 @@
 #include "runtime.h"
 
-#include <stdbool.h>
 #include <pipewire/pipewire.h>
+#include <stdbool.h>
 
 struct pw_thread_loop *runtime_primary_event_loop;
 struct pw_thread_loop *runtime_worker_event_loop;
@@ -14,6 +14,6 @@ char *config_preset_uri = NULL;
 char *config_nodename = NULL;
 
 void runtime_init() {
-  runtime_primary_event_loop = pw_thread_loop_new("primary", NULL);
-  runtime_worker_event_loop = pw_thread_loop_new("worker", NULL);
+   runtime_primary_event_loop = pw_thread_loop_new("primary", NULL);
+   runtime_worker_event_loop = pw_thread_loop_new("worker", NULL);
 }
