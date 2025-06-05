@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       constants.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include "constants.h"
 
 #include <lilv/lilv.h>
@@ -5,8 +18,13 @@
 #include <lv2/presets/presets.h>
 #include <pipewire/pipewire.h>
 
-struct constants constants;
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
 
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static void uri_table_init(URITable *table) { pw_array_init(&table->array, 2048); }
 
 static void uri_table_destroy(URITable *table) {
@@ -43,6 +61,14 @@ static const char *uri_table_unmap(LV2_URID_Map_Handle handle, LV2_URID urid) {
    return NULL;
 }
 
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+struct constants constants;
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 void constants_init() {
    uri_table_init(&constants.uri_table);
    constants.world = lilv_world_new();

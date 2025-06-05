@@ -1,8 +1,28 @@
+/*
+ * ============================================================================
+ *  File:       handler_process.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include "handler.h"
 #include "host.h"
 #include "node.h"
 #include "ports.h"
 
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static void process_work_responses() {
    struct spa_ringbuffer *ring = &host->work_response_ring;
    uint8_t *buffer = host->work_response_buffer;
@@ -47,6 +67,13 @@ static void process_work_responses() {
    }
 }
 
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 void on_process(void *userdata, struct spa_io_position *position) {
    uint32_t n_samples = position->clock.duration;
    uint64_t frame = node->clock_time;

@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       node.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include "node.h"
 
 #include <spa/param/latency-utils.h>
@@ -8,9 +21,10 @@
 #include "host.h"
 #include "runtime.h"
 
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
 static Node the_node;
-
-Node *node = &the_node;
 
 static struct pw_filter_events filter_events = {
     PW_VERSION_FILTER_EVENTS, .process = on_process, .param_changed = on_param_changed,
@@ -24,8 +38,9 @@ static struct pw_filter_events filter_events = {
     */
 };
 
-// struct pw_filter_events *node_get_engine_filter_events() { return &filter_events; }
-
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static void create_node_ports() {
    set_init(&node->ports);
    HostPort *host_port;
@@ -97,6 +112,14 @@ static void create_node_ports() {
    }
 }
 
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+Node *node = &the_node;
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 int node_setup() {
    char latency[50];
 

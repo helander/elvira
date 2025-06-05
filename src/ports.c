@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       ports.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include "ports.h"
 
 #include <spa/control/control.h>
@@ -13,11 +26,15 @@
 #include "set.h"
 #include "types.h"
 
-Set ports;
-
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
 
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq) {
    pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_aseq,
                   port_index, aseq, aseq->atom.size + sizeof(LV2_Atom), false, NULL);
@@ -28,6 +45,25 @@ static void send_atom(int port_index, LV2_Atom *atom) {
                   port_index, atom, atom->size + sizeof(LV2_Atom), false, NULL);
 }
 
+static Port *find_port(uint32_t port_index) {
+   Port *port;
+   SET_FOR_EACH(Port *, port, &ports) {
+      if (!port->host_port) continue;
+      if (port->host_port->index == port_index) {
+         return port;
+      }
+   }
+   return NULL;
+}
+
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+Set ports;
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 void pre_run_audio_input(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    float *inp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (inp == NULL) {
@@ -259,17 +295,6 @@ void ports_setup() {
       }
       if (port) set_add(&ports, port);
    }
-}
-
-static Port *find_port(uint32_t port_index) {
-   Port *port;
-   SET_FOR_EACH(Port *, port, &ports) {
-      if (!port->host_port) continue;
-      if (port->host_port->index == port_index) {
-         return port;
-      }
-   }
-   return NULL;
 }
 
 void ports_write(void *const controller, const uint32_t port_index, const uint32_t buffer_size,

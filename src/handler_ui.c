@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       handler_ui.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include <gtk/gtk.h>
 #include <lilv/lilv.h>
 #include <lv2/instance-access/instance-access.h>
@@ -12,6 +25,13 @@
 #include "ports.h"
 #include "runtime.h"
 
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static uint32_t ui_port_index(void* const controller, const char* symbol) {
    HostPort* port;
    SET_FOR_EACH(HostPort*, port, &host->ports) {
@@ -20,6 +40,13 @@ static uint32_t ui_port_index(void* const controller, const char* symbol) {
    return LV2UI_INVALID_PORT_INDEX;
 }
 
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* data, size_t size,
                 void* user_data) {
    const LilvNode* selected_ui_type;

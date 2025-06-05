@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       handler_host.c
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include <lilv/lilv.h>
 #include <lv2/state/state.h>
 
@@ -7,6 +20,13 @@
 #include "node.h"
 #include "runtime.h"
 
+/* ========================================================================== */
+/*                               Local State                                  */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                              Local Functions                               */
+/* ========================================================================== */
 static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
                                             const void *data) {
    uint16_t len = size;
@@ -37,6 +57,27 @@ static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, co
    return LV2_WORKER_SUCCESS;
 }
 
+static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
+                              uint32_t *type) {
+   HostPort *port;
+   SET_FOR_EACH(HostPort *, port, &host->ports) {
+      if (strcmp(port_symbol, port->name)) continue;
+      *size = sizeof(float);
+      *type = constants.forge.Float;
+      return &port->current;
+   }
+   *type = 0;
+   *size = 0;
+   return NULL;
+}
+
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 int on_host_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
                    void *user_data) {
    LV2_Worker_Status status = host->iface->work(host->handle, the_worker_respond, host, size, data);
@@ -83,20 +124,6 @@ int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
       }
    }
    return 0;
-}
-
-static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
-                              uint32_t *type) {
-   HostPort *port;
-   SET_FOR_EACH(HostPort *, port, &host->ports) {
-      if (strcmp(port_symbol, port->name)) continue;
-      *size = sizeof(float);
-      *type = constants.forge.Float;
-      return &port->current;
-   }
-   *type = 0;
-   *size = 0;
-   return NULL;
 }
 
 int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,

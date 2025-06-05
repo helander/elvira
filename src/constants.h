@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       constants.h
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #include <lilv/lilv.h>
 #include <lv2/atom/atom.h>
 #include <lv2/atom/forge.h>
@@ -7,6 +20,15 @@
 #include <lv2/worker/worker.h>
 #include <pipewire/array.h>
 
+/* ========================================================================== */
+/*                               Public Macros                                */
+/* ========================================================================== */
+#define constants_map(c, uri) ((c).map.map((c).map.handle, (uri)))
+#define constants_unmap(c, uid) ((c).unmap.unmap((c).unmap.handle, (uid)))
+
+/* ========================================================================== */
+/*                              Public Typedefs                               */
+/* ========================================================================== */
 typedef struct URITable {
    struct pw_array array;
 } URITable;
@@ -50,9 +72,12 @@ struct constants {
    LV2_URID atom_eventTransfer;
 };
 
-#define constants_map(c, uri) ((c).map.map((c).map.handle, (uri)))
-#define constants_unmap(c, uid) ((c).unmap.unmap((c).unmap.handle, (uid)))
-
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
 extern struct constants constants;
 
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 extern void constants_init();

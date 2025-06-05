@@ -1,3 +1,16 @@
+/*
+ * ============================================================================
+ *  File:       host.h
+ *  Project:    elvira
+ *  Author:     Lars-Erik Helander <lehswel@gmail.com>
+ *  License:    MIT
+ *
+ *  Description:
+ *      .
+ *      
+ * ============================================================================
+ */
+
 #pragma once
 
 #include <lilv/lilv.h>
@@ -9,10 +22,16 @@
 
 #include "set.h"
 
+/* ========================================================================== */
+/*                               Public Macros                                */
+/* ========================================================================== */
 #define ATOM_BUFFER_SIZE 16 * 1024
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
 
+/* ========================================================================== */
+/*                              Public Typedefs                               */
+/* ========================================================================== */
 typedef struct Host Host;
 typedef struct HostPort HostPort;
 
@@ -62,7 +81,14 @@ struct HostPort {
    float current;              // not used by all
 };
 
+/* ========================================================================== */
+/*                               Public State                                 */
+/* ========================================================================== */
+extern Host *host;
+
+/* ========================================================================== */
+/*                             Public Functions                               */
+/* ========================================================================== */
 extern int host_setup();
 extern void host_ports_discover();
 
-extern Host *host;
