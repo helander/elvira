@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Event loop handler for pipewire commands (sent from pw-cli send-command ...).
  *      
  * ============================================================================
  */

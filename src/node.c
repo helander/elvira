@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      pipewire node related functions.
  *      
  * ============================================================================
  */

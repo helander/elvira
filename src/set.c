@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Simple set collection support..
  *      
  * ============================================================================
  */

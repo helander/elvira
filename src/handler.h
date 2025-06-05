@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Function prototypes for all event loop handlers.
  *      
  * ============================================================================
  */

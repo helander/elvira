@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Mapping from/to lv2 plugin ports and pipewire ports.
  *      
  * ============================================================================
  */

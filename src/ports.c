@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Transfer data between pipewire node ports and lv2 plugin ports.
  *      
  * ============================================================================
  */

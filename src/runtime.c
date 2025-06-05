@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Basic runtime related state objects.
  *      
  * ============================================================================
  */

@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      lv2 uri/urid mapping/unmapping functions.
  *      
  * ============================================================================
  */

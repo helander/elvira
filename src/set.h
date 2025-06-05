@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Small and simple set manager ( add and iterate ).
  *      
  * ============================================================================
  */

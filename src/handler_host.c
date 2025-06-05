@@ -6,7 +6,7 @@
  *  License:    MIT
  *
  *  Description:
- *      .
+ *      Event loop handlers related to lv2 host functions.
  *      
  * ============================================================================
  */
