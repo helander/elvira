@@ -10,10 +10,10 @@
 #include <stdlib.h>
 
 #include "constants.h"
-#include "host_ports.h"
-#include "host_types.h"
-#include "engine_types.h"
+//#include "engine_types.h"
+#include "runtime.h"
 #include "node.h"
+#include "handler.h"
 
 static Host the_host;
 
@@ -25,178 +25,40 @@ const LV2_Feature buf_size_features[3] = {
     {LV2_BUF_SIZE__boundedBlockLength, NULL},
 };
 
-static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
-                                            const void *data) {
-   uint16_t len = size;
-   if (size > MAX_WORK_RESPONSE_MESSAGE_SIZE) {
-      fprintf(stderr, "Payload too large\n");
-   } else {
-      uint8_t temp[MAX_WORK_RESPONSE_MESSAGE_SIZE + sizeof(uint16_t)];
-      memcpy(temp, &len, sizeof(uint16_t));
-      memcpy(temp + sizeof(uint16_t), data, len);
-      uint32_t total_len = len + sizeof(uint16_t);
-
-      uint32_t write_index;
-      spa_ringbuffer_get_write_index(&host->work_response_ring, &write_index);
-
-      uint32_t ring_offset = write_index & (WORK_RESPONSE_RINGBUFFER_SIZE - 1);
-      uint32_t space = WORK_RESPONSE_RINGBUFFER_SIZE - ring_offset;
-
-      if (space >= total_len) {
-         memcpy(host->work_response_buffer + ring_offset, temp, total_len);
-      } else {
-         memcpy(host->work_response_buffer + ring_offset, temp, space);
-         memcpy(host->work_response_buffer, temp + space, total_len - space);
-      }
-
-      spa_ringbuffer_write_update(&host->work_response_ring, write_index + total_len);
-   }
-
-   return LV2_WORKER_SUCCESS;
-}
-
-static int on_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                     void *user_data) {
-   LV2_Worker_Status status =
-       host->iface->work(host->handle, the_worker_respond, host, size, data);
-   return status;
-}
 
 static LV2_Worker_Status my_schedule_work(LV2_Worker_Schedule_Handle handle, uint32_t size,
                                           const void *data) {
-   pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), on_worker, 0, data, size,
+   pw_loop_invoke(pw_thread_loop_get_loop(runtime_worker_event_loop), on_host_worker, 0, data, size,
                   false, NULL);
    return LV2_WORKER_SUCCESS;
 }
 
 static void load_plugin() {
-   LilvNode *uri = lilv_new_uri(constants.world, host->plugin_uri);
+   LilvNode *uri = lilv_new_uri(constants.world, config_plugin_uri);
    LilvPlugin *plugin = NULL;
    if (uri != NULL) {
       const LilvPlugins *plugins = lilv_world_get_all_plugins(constants.world);
       plugin = (LilvPlugin *)lilv_plugins_get_by_uri(plugins, uri);
       lilv_node_free(uri);
       if (plugin == NULL) {
-         printf("\ncan't load plugin %s", host->plugin_uri);
+         printf("\ncan't load plugin %s", config_plugin_uri);
       }
    } else {
-      printf("\nerror in URI %s", host->plugin_uri);
+      printf("\nerror in URI %s", config_plugin_uri);
    }
    host->lilvPlugin = plugin;
 }
 
-int host_on_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                   void *user_data) {
-   Engine *engine = (Engine *)user_data;
-
-   char *preset_uri = (char *)data;
-
-   if (strlen(preset_uri)) {
-      host->lilv_preset = lilv_new_uri(constants.world, preset_uri);
-
-      if (host->lilv_preset) {
-         lilv_world_load_resource(constants.world, host->lilv_preset);
-         LilvState *state =
-             lilv_state_new_from_world(constants.world, &constants.map, host->lilv_preset);
-         if (state) {
-            LV2_Feature urid_feature = {
-                .URI = LV2_URID__map,
-                .data = &constants.map,
-            };
-            const LV2_Feature *features[] = {&urid_feature, NULL};
-
-            lilv_state_restore(state, host->instance, NULL, NULL, 0, features);
-            printf("\nPreset with URI: %s applied\n", preset_uri);
-            fflush(stdout);
-
-            pw_thread_loop_lock(node->engine_loop);
-
-            struct spa_dict_item items[1];
-            items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
-            pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
-
-            pw_thread_loop_unlock(node->engine_loop);
-
-         } else {
-            printf("\nNo preset to load.");
-            fflush(stdout);
-         }
-      } else {
-         printf("\nNo preset specified.");
-         fflush(stdout);
-      }
-   }
-   return 0;
-}
-
-static const void *port_value(const char *port_symbol, void *user_data, uint32_t *size,
-                              uint32_t *type) {
-   //Engine *const engine = (Engine *)user_data;
-
-
-   HostPort *port;
-   SET_FOR_EACH(HostPort*, port, &host->ports) {
-      if (strcmp(port_symbol, port->name)) continue;
-      *size = sizeof(float);
-      *type = constants.forge.Float;
-      return &port->current;
-   }
-   *type = 0;
-   *size = 0;
-   return NULL;
-}
-
-int host_on_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data, size_t size,
-                 void *user_data) {
-   //Engine *engine = (Engine *)user_data;
-   char *preset_name = (char *)data;
-
-   if (strlen(preset_name)) {
-      const LV2_Feature *features[] = {&constants.map_feature, &constants.unmap_feature, NULL};
-
-      char preset_dir[200];
-      sprintf(preset_dir, "%s/.lv2/%s", getenv("HOME"), preset_name);
-
-      // Create the preset state
-      LilvState *state = lilv_state_new_from_instance(
-          host->lilvPlugin, host->instance, &constants.map, "/tmp/elvira", preset_dir,
-          preset_dir, preset_dir, port_value, host, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE,
-          features);
-
-      if (!state) {
-         fprintf(stderr, "\nFailed to create the preset state");
-         return -1;
-      }
-
-      char preset_uri[200];
-
-      sprintf(preset_uri, "%s/preset/%s",
-              lilv_node_as_uri(lilv_plugin_get_uri(host->lilvPlugin)), preset_name);
-
-      // Save the created preset on filesystem
-      lilv_state_save(constants.world, &constants.map, &constants.unmap, state, preset_uri,
-                      preset_dir, "state.ttl");
-
-      lilv_state_free(state);
-
-      // Various methods has been tested to make the newly created preset be available without
-      // having to restart the program. The methods below works, but is a bit "brutal". Any other
-      // methods that should be tested?
-      lilv_world_load_all(constants.world);
-
-      printf("\nPreset saved to %s with URI: %s\n", preset_dir, preset_uri);
-   }
-   return 0;
-}
 
 int host_setup() {
+   constants_init();
    load_plugin();
    {
       uint32_t n_features = 0;
       static const int32_t min_block_length = 1;
       static const int32_t max_block_length = 8192;
       static const int32_t seq_size = 32768;
-      float fsample_rate = (float)node->samplerate;
+      float fsample_rate = (float)config_samplerate;
 
       host->block_length = 1024;
       host->features[n_features++] = &constants.map_feature;
@@ -257,7 +119,7 @@ int host_setup() {
       host->features[n_features++] = &host->options_feature;
 
       host->instance = lilv_plugin_instantiate(
-          host->lilvPlugin, node->samplerate, host->features);
+          host->lilvPlugin, config_samplerate, host->features);
 
       host->handle = lilv_instance_get_handle(host->instance);
 
@@ -276,4 +138,73 @@ int host_setup() {
 
 
    return 0;
+}
+
+/*
+#include "host_ports.h"
+
+#include <spa/control/control.h>
+#include <spa/control/ump-utils.h>
+#include <spa/pod/builder.h>
+#include <stdio.h>
+
+#include "types.h"
+#include "host_types.h"
+#include "host.h"
+#include "engine_types.h"
+#include "constants.h"
+*/
+
+void host_ports_discover() {
+   const LilvPlugin *plugin = host->lilvPlugin;
+   /// se till att detta görs vid init av EnginePorts   memset(dummyAudioInput, 0,
+   /// sizeof(dummyAudioInput));
+   //host->ports = NULL;
+   set_init(&host->ports);
+   int n_ports = lilv_plugin_get_num_ports(plugin);
+   for (int n = 0; n < n_ports; n++) {
+      HostPort *port = (HostPort *)calloc(1, sizeof(HostPort));
+      port->index = n;
+
+      port->lilvPort = lilv_plugin_get_port_by_index(plugin, n);
+      strcpy(port->name, lilv_node_as_string(lilv_port_get_symbol(plugin, port->lilvPort)));
+      if (lilv_port_is_a(plugin, port->lilvPort, constants.atom_AtomPort) &&
+          lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
+         port->type = HOST_ATOM_INPUT;
+         port->buffer = calloc(1, ATOM_BUFFER_SIZE);
+         lilv_instance_connect_port(host->instance, port->index, port->buffer);
+      } else if (lilv_port_is_a(plugin, port->lilvPort, constants.atom_AtomPort) &&
+                 lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
+         port->type = HOST_ATOM_OUTPUT;
+         port->buffer = calloc(1, ATOM_BUFFER_SIZE);
+         lilv_instance_connect_port(host->instance, port->index, port->buffer);
+
+      } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_ControlPort) &&
+                 lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
+         LilvNode *lv2_default = lilv_new_uri(constants.world, LILV_NS_LV2 "default");
+         LilvNode *default_val = lilv_port_get(plugin, port->lilvPort, lv2_default);
+         if (default_val) {
+            port->dfault = lilv_node_as_float(default_val);
+         }
+         port->type = HOST_CONTROL_INPUT;
+         port->current = port->dfault;
+         lilv_instance_connect_port(host->instance, port->index, &port->current);
+      } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_ControlPort) &&
+                 lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
+         port->type = HOST_CONTROL_OUTPUT;
+         lilv_instance_connect_port(host->instance, port->index, &port->current);
+      } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_AudioPort) &&
+                 lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
+         port->type = HOST_AUDIO_INPUT;
+      } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_AudioPort) &&
+                 lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
+         port->type = HOST_AUDIO_OUTPUT;
+      } else {
+         free(port);
+         port = NULL;
+         printf("\nUnsupported port type: port #%d (%s)", port->index, port->name);
+      }
+      //arrput(host->ports, *port);
+      set_add(&host->ports, port);
+   }
 }

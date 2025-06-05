@@ -5,13 +5,9 @@
 #include <string.h>
 
 void set_init(Set *set) {
-printf("\nsetinit %p",set);fflush(stdout);
     set->count = 0;
-printf("\nsetinit 2");fflush(stdout);
     set->capacity = 4;
-printf("\nsetinit 3");fflush(stdout);
     set->items = malloc(set->capacity * sizeof(void *));
-printf("\nsetinit 4");fflush(stdout);
 }
 
 void set_free(Set *set) {

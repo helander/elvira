@@ -4,9 +4,9 @@
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-// #include "engine.h"
-#include "node_types.h"
-#include "engine_types.h"
+//#include "engine_types.h"
+#include "runtime.h"
+#include "handler.h"
 #include "host.h"
 
 static Node the_node;
@@ -15,6 +15,17 @@ Node *node = &the_node;
 
 static struct pw_filter_events filter_events = {
     PW_VERSION_FILTER_EVENTS,
+    .process=on_process,
+    .param_changed=on_param_changed,
+    .command=on_command,
+    .destroy=on_destroy,
+/*
+    .state_changed=on_state_changed,
+    .io_changed=on_io_changed,
+    .add_buffer=on_add_buffer,
+    .remove_buffer=on_remove_buffer,
+    .drained=on_drained,
+*/
 };
 
 struct pw_filter_events *node_get_engine_filter_events() { return &filter_events; }
@@ -95,19 +106,19 @@ static void create_node_ports() {
 int node_setup() {
    char latency[50];
 
-   sprintf(latency, "%d/%d", node->latency_period, node->samplerate);
+   sprintf(latency, "%d/%d", config_latency_period, config_samplerate);
 
    // Create pw engine loop resources. Lock the engine loop
-   pw_thread_loop_lock(node->engine_loop);
+   pw_thread_loop_lock(runtime_primary_event_loop);
 
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, NULL);
    pw_properties_set(props, "elvira.role", "engine");
-   pw_properties_set(props, "elvira.plugin", host->plugin_uri);
-   pw_properties_set(props, "elvira.preset", host->preset_uri);
+   pw_properties_set(props, "elvira.plugin", config_plugin_uri);
+   pw_properties_set(props, "elvira.preset", config_preset_uri);
 
-   node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(node->engine_loop),
-                                              node->nodename, props, &filter_events, node);
+   node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
+                                              config_nodename, props, &filter_events, node);
 
    uint8_t buffer[1024];
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
@@ -125,5 +136,5 @@ int node_setup() {
    create_node_ports();
 
    // All pw resources created, release the lock
-   pw_thread_loop_unlock(node->engine_loop);
+   pw_thread_loop_unlock(runtime_primary_event_loop);
 }

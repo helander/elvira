@@ -4,22 +4,22 @@
 #include <lv2/ui/ui.h>
 #include <suil/suil.h>
 
-#include "common/types.h"
+#include "runtime.h"
+#include "types.h"
 #include "node.h"
 #include "host.h"
-#include "host_types.h"
-#include "engine_types.h"
-#include "engine_ports.h"
+//#include "engine_types.h"
+#include "ports.h"
 #include "constants.h"
 
 #include <stdio.h>
 
 
-static EnginePort *find_engine_port(uint32_t port_index) {
+static Port *find_port(uint32_t port_index) {
 
 
-    EnginePort *port;
-    SET_FOR_EACH(EnginePort*, port, &engine_ports) {
+    Port *port;
+    SET_FOR_EACH(Port*, port, &ports) {
       if (!port->host_port) continue;
       if (port->host_port->index == port_index) {
          return port;
@@ -32,7 +32,7 @@ static EnginePort *find_engine_port(uint32_t port_index) {
 void engine_ports_write(void* const controller, const uint32_t port_index,
                         const uint32_t buffer_size, const uint32_t protocol,
                         const void* const buffer) {
-   EnginePort *port = find_engine_port(port_index);
+   Port *port = find_port(port_index);
    if (protocol == 0U) {
       const float value = *(const float*)buffer;
       printf("\nWrite to control port %d value %f", port_index, value);
@@ -134,7 +134,7 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
                                        &instance_feature, &idle_feature, NULL};
 
    GtkWidget* plugin_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(plugin_window), node->nodename);
+   gtk_window_set_title(GTK_WINDOW(plugin_window), config_nodename);
    gtk_window_set_default_size(GTK_WINDOW(plugin_window), 200, 150);
    gtk_widget_show_all(plugin_window);
 
@@ -151,7 +151,7 @@ int pluginui_on_start(struct spa_loop* loop, bool async, uint32_t seq, const voi
       gtk_container_add(GTK_CONTAINER(plugin_window), plugin_widget);
       gtk_widget_show_all(plugin_window);
    } else {
-      printf("\nCould not create UI for %s", node->nodename);
+      printf("\nCould not create UI for %s", config_nodename);
       fflush(stdout);
    }
    return 0;

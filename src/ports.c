@@ -1,18 +1,18 @@
-#include "engine_ports.h"
+#include "ports.h"
 
 #include <spa/control/control.h>
 #include <spa/control/ump-utils.h>
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
-#include "common/types.h"
-#include "engine_types.h"
+#include "runtime.h"
+#include "types.h"
 #include "constants.h"
 #include "host.h"
 #include "node.h"
 #include "set.h"
 
-Set engine_ports;
+Set ports;
 
 static float dummyAudioInput[20000];
 static float dummyAudioOutput[20000];
@@ -39,7 +39,7 @@ static int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t port_i
 }
 
 static void send_atom_sequence(int port_index, LV2_Atom_Sequence *aseq) {
-   pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), on_port_event_aseq, port_index,
+   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_aseq, port_index,
                   aseq, aseq->atom.size + sizeof(LV2_Atom), false, NULL);
 }
 
@@ -52,11 +52,11 @@ static int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t port_i
 }
 
 static void send_atom(int port_index, LV2_Atom *atom) {
-   pw_loop_invoke(pw_thread_loop_get_loop(node->engine_loop), on_port_event_atom, port_index,
+   pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_port_event_atom, port_index,
                   atom, atom->size + sizeof(LV2_Atom), false, NULL);
 }
 
-void pre_run_audio_input(EnginePort *port, uint64_t frame, float denom,
+void pre_run_audio_input(Port *port, uint64_t frame, float denom,
                          uint64_t n_samples) {
    float *inp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (inp == NULL) {
@@ -66,9 +66,9 @@ void pre_run_audio_input(EnginePort *port, uint64_t frame, float denom,
    }
 }
 
-void post_run_audio_input(EnginePort *port) {}
+void post_run_audio_input(Port *port) {}
 
-void pre_run_audio_output(EnginePort *port, uint64_t frame, float denom,
+void pre_run_audio_output(Port *port, uint64_t frame, float denom,
                           uint64_t n_samples) {
    float *outp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
    if (outp == NULL) {
@@ -78,9 +78,9 @@ void pre_run_audio_output(EnginePort *port, uint64_t frame, float denom,
    }
 }
 
-void post_run_audio_output(EnginePort *port) {}
+void post_run_audio_output(Port *port) {}
 
-void pre_run_control_input(EnginePort *port, uint64_t frame, float denom,
+void pre_run_control_input(Port *port, uint64_t frame, float denom,
                            uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
@@ -196,12 +196,12 @@ void pre_run_control_input(EnginePort *port, uint64_t frame, float denom,
    }
 }
 
-void post_run_control_input(EnginePort *port) {
+void post_run_control_input(Port *port) {
    if (port->node_port->pwbuffer)
       pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
 
-void pre_run_control_output(EnginePort *port, uint64_t frame, float denom,
+void pre_run_control_output(Port *port, uint64_t frame, float denom,
                             uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
@@ -209,7 +209,7 @@ void pre_run_control_output(EnginePort *port, uint64_t frame, float denom,
    port->node_port->pwbuffer = pw_filter_dequeue_buffer(port->node_port->pwPort);
 }
 
-void post_run_control_output(EnginePort *port) {
+void post_run_control_output(Port *port) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    send_atom_sequence(port->host_port->index, aseq);
    LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
@@ -249,3 +249,55 @@ void post_run_control_output(EnginePort *port) {
    if (port->node_port->pwbuffer)
       pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
+
+
+void ports_setup() {
+   set_init(&ports);
+   NodePort *node_port;
+   SET_FOR_EACH(NodePort*, node_port, &node->ports) {
+      HostPort *host_port = NULL;
+      HostPort *hport;
+      SET_FOR_EACH(HostPort*, hport, &host->ports) {
+         if (hport->index == node_port->index) {
+            host_port = hport;
+            break;
+         }
+      }
+      printf("\nEP %s %d", host_port->name, node_port->type);
+      fflush(stdout);
+      Port *port = (Port *)calloc(1, sizeof(Port));
+      port->host_port = host_port;
+      port->node_port = node_port;
+      switch (node_port->type) {
+         case NODE_CONTROL_INPUT:
+            port->type = PORT_CONTROL_INPUT;
+            port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+            spa_ringbuffer_init(&port->ring);
+            port->pre_run = pre_run_control_input;
+            port->post_run = post_run_control_input;
+            break;
+         case NODE_CONTROL_OUTPUT:
+            port->type = PORT_CONTROL_OUTPUT;
+            port->ringbuffer = calloc(1, ATOM_RINGBUFFER_SIZE);
+            spa_ringbuffer_init(&port->ring);
+            port->pre_run = pre_run_control_output;
+            port->post_run = post_run_control_output;
+            break;
+         case NODE_AUDIO_INPUT:
+            port->type = PORT_AUDIO_INPUT;
+            port->pre_run = pre_run_audio_input;
+            port->post_run = post_run_audio_input;
+            break;
+         case NODE_AUDIO_OUTPUT:
+            port->type = PORT_AUDIO_OUTPUT;
+            port->pre_run = pre_run_audio_output;
+            port->post_run = post_run_audio_output;
+            break;
+         default:
+            free(port);
+            port = NULL;
+      }
+      if (port) set_add(&ports, port);
+   }
+}
+

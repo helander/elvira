@@ -36,14 +36,18 @@ pkg_check_modules(SUIL REQUIRED suil-0)
 
 add_executable(elvira
     src/elvira.c
-    src/engine.c
-    src/engine_ports.c
+    src/ports.c
     src/node.c
     src/host.c
     src/ui.c
     src/set.c
-    src/host_ports.c
+    src/handler_process.c
+    src/handler_destroy.c
+    src/handler_param.c
+    src/handler_command.c
+    src/handler_host.c
     src/constants.c
+    src/runtime.c
 )
 
 target_include_directories(elvira PRIVATE
