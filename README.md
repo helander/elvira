@@ -1,5 +1,84 @@
 <img src="./docs/img/elvira.svg">
 
+
+
+```mermaid
+sequenceDiagram
+    actor main as main<br/>(program)
+    %%actor rt_thread as RT thread<br/>(pw managed)
+    participant host as Host<br/>(elvira module)
+    participant node as Node<br/>(elvira module)
+    participant ports as Ports<br/>(elvira module)
+    participant runtime as Runtime<br/>(elvira module)
+    participant handlers as Handlers<br/>(elvira module)
+    participant gtk as Gtk API<br/>(library)
+    participant pw as Pipewire API<br/>(library)
+    participant lilv as lilv API<br/>(library)
+    participant suil as suil API<br/>(library)
+
+    main-->+gtk: gtk_init
+    gtk-->-main: 
+    main-->+pw: pw_init
+    pw-->-main: 
+
+    main-->+runtime: runtime_init
+    create actor primary as primary loop<br/>(pw event loop)
+    runtime->primary: create
+    create actor worker as worker loop<br/>(pw event loop)
+    runtime->worker: create
+    runtime-->-main: 
+ 
+    main->primary: start
+    main->worker: start
+
+    main-->+host: host_setup
+    host-->+lilv: load plugin
+    lilv-->-host: 
+    host-->+lilv: instantiate plugin
+    lilv-->-host: 
+    host-->+lilv: discover plugin ports
+    lilv-->-host: 
+    host-->-main: 
+
+    main-->+node: node_setup
+    node-->+pw: create pw node
+    pw-->-node: 
+    node-->+pw: create pw ports
+    pw-->-node: 
+    node-->-main: 
+
+    main-->+ports: ports_setup
+    ports-->+ports: create port mappings
+    ports-->-ports: 
+    ports-->-main: 
+
+
+    main->>+lilv: lilv_instance_activate
+    lilv->>-main: 
+
+    opt Preset
+      main->primary: invoke(on_host_preset)
+      primary-->+handlers: on_host_preset
+      handlers-->+lilv: apply preset
+      lilv-->-handlers: 
+      handlers-->-primary: 
+    end
+
+    opt UI
+      main->primary: invoke(on_ui_start)
+      primary-->+handlers: on_ui_start
+      handlers-->+suil: create UI
+      suil-->-handlers: 
+      handlers-->+gtk: show UI
+      gtk-->-handlers: 
+      handlers-->-primary: 
+    end
+
+    main-->+gtk: gtk_main
+```
+
+
+
 # LWira
 Pronounced “elvira”, is an lv2 host for pipewire
 
