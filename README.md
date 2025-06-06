@@ -1,3 +1,32 @@
+    participant host as Host<br/>(elvira module)
+    participant node as Node<br/>(elvira module)
+    participant ports as Ports<br/>(elvira module)
+    participant runtime as Runtime<br/>(elvira module)
+    participant handlers as Handlers<br/>(elvira module)
+    participant gtk as Gtk API<br/>(library)
+    participant pw as Pipewire API<br/>(library)
+    participant lilv as lilv API<br/>(library)
+    participant suil as suil API<br/>(library)
+
+
+
+    create participant plugin as plugin<br/>(lv2 instance)
+
+    main->>+plugin: start 
+    plugin->>-main: ""
+    create participant on_process as on_process<br/>(pw event handler)
+    main->>+on_process: register 
+    on_process->>-main: ""
+    main->>+ports: setup 
+    ports->>-main: ""
+
+
+
+
+
+
+
+
 <img src="./docs/img/elvira.svg">
 
 
@@ -5,7 +34,7 @@
 ```mermaid
 sequenceDiagram
     actor main as main<br/>(program)
-    %%actor rt_thread as RT thread<br/>(pw managed)
+    actor rt_thread as RT thread<br/>(pw managed)
     participant host as Host<br/>(elvira module)
     participant node as Node<br/>(elvira module)
     participant ports as Ports<br/>(elvira module)
@@ -35,6 +64,10 @@ sequenceDiagram
     host-->+lilv: load plugin
     lilv-->-host: 
     host-->+lilv: instantiate plugin
+    create participant plugin as plugin<br/>(lv2 instance)
+    lilv->plugin: create
+
+
     lilv-->-host: 
     host-->+lilv: discover plugin ports
     lilv-->-host: 
@@ -74,7 +107,20 @@ sequenceDiagram
       handlers-->-primary: 
     end
 
-    main-->+gtk: gtk_main
+    par
+      main-->+gtk: gtk_main
+    and
+       loop Pipewire periodic execution
+          rt_thread->>handlers: on_process
+          handlers-->>+ports: copy inputs to plugin
+          ports->>-handlers:  
+          handlers-->>+plugin: run
+          plugin->>-handlers: 
+          handlers-->>+ports: copy outputs from plugin
+          ports->>-handlers: 
+          handlers->>-rt_thread: 
+       end
+    end
 ```
 
 
