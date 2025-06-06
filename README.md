@@ -82,7 +82,7 @@ sequenceDiagram
       main-->+gtk: gtk_main
     and
        loop Pipewire periodic execution
-          rt_thread->>handlers: on_process
+          rt_thread->>+handlers: on_process
           handlers-->>+ports: copy inputs to plugin
           ports->>-handlers:  
           handlers-->>+plugin: run
