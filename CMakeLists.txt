@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(RPi4Optimized C CXX)
+project(elvira C CXX)
 
 # Enable Release by default if nothing is specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -68,3 +68,4 @@ target_link_libraries(elvira PRIVATE
     dl
 )
 
+install(TARGETS elvira DESTINATION bin)

@@ -1,2 +1,3 @@
-cmake -B tempdir -DCMAKE_BUILD_TYPE=Release
+cmake -B tempdir -DCMAKE_BUILD_TYPE=Release 
 cmake --build tempdir
+sudo cmake --install tempdir --prefix /usr
