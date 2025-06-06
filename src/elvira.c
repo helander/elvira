@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
    if (config_nodename == NULL || config_plugin_uri == NULL) syntax_error = true;
    if (pos_arg_cnt < 2 || syntax_error) {
       fprintf(stderr,
-              "\nUsage: engine-name plugin-uri [--showui] [--latency period] [--samplerate rate] "
+              "\nUsage: $ elvira <engine-nam>e <plugin-uri> [--showui] [--latency period] [--samplerate rate] "
               "[--preset uri]\n");
       exit(-1);
    }
