@@ -1,6 +1,7 @@
 <img src="./docs/img/elvira.svg">
 
-
+# Software architecture
+The following diagram exposes a number of different aspects of the elvira software architecture. More detailed information is available in the code itself. A lot of the functionality of the elvira implementation comes from the used components, such as pipewire, lv2, lilv, suil, etc. The functionality of these componenents is documented elsewhere.
 
 ```mermaid
 sequenceDiagram
