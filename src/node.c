@@ -29,13 +29,20 @@ static Node the_node;
 static struct pw_filter_events filter_events = {
     PW_VERSION_FILTER_EVENTS, .process = on_process, .param_changed = on_param_changed,
     .command = on_command,    .destroy = on_destroy,
+    .state_changed=on_state_changed,
     /*
-        .state_changed=on_state_changed,
         .io_changed=on_io_changed,
         .add_buffer=on_add_buffer,
         .remove_buffer=on_remove_buffer,
         .drained=on_drained,
     */
+};
+
+static struct spa_hook registry_listener;
+
+static const struct pw_registry_events registry_events = {
+    PW_VERSION_REGISTRY_EVENTS,
+    .global = on_registry_global,
 };
 
 /* ========================================================================== */
@@ -101,8 +108,7 @@ static void create_node_ports() {
             node_port->type = NODE_AUDIO_OUTPUT;
             break;
          default:
-            fprintf(stderr, "\nUnknown host port type %d", host_port->type);
-            fflush(stderr);
+            pw_log_error("Unknown host port type %d", host_port->type);
             free(node_port);
             node_port = NULL;
       }
@@ -128,6 +134,14 @@ int node_setup() {
    // Create pw resources. Lock the  loop
    pw_thread_loop_lock(runtime_primary_event_loop);
 
+   struct pw_context *context = pw_context_new(pw_thread_loop_get_loop(runtime_primary_event_loop), NULL, 0);
+   struct pw_core *core = pw_context_connect(context, NULL, 0);
+
+   node->registry = pw_core_get_registry(core, PW_VERSION_REGISTRY, 0);
+   pw_registry_add_listener(node->registry, &registry_listener,
+                             &registry_events, node);
+
+
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, NULL);
    pw_properties_set(props, "elvira.role", "engine");
@@ -145,7 +159,7 @@ int node_setup() {
        &b, SPA_PARAM_ProcessLatency, &SPA_PROCESS_LATENCY_INFO_INIT(.ns = 10 * SPA_NSEC_PER_MSEC));
 
    if (pw_filter_connect(node->filter, PW_FILTER_FLAG_RT_PROCESS, params, 1) < 0) {
-      fprintf(stderr, "can't connect\n");
+      pw_log_error( "Node pw filter can't connect\n");
       return -1;
    }
 

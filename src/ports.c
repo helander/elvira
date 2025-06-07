@@ -98,8 +98,6 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
       spa_ringbuffer_get_read_index(&port->ring, &read_index);
       spa_ringbuffer_get_write_index(&port->ring, &write_index);
       while ((write_index - read_index) >= sizeof(uint16_t)) {
-         // printf("\ndiff write index %x   read_index
-         // %x",write_index,read_index);fflush(stdout);
          uint16_t msg_len;
          uint32_t offset = read_index & (ATOM_RINGBUFFER_SIZE - 1);
          uint32_t space = ATOM_RINGBUFFER_SIZE - offset;
@@ -302,23 +300,20 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
    Port *port = find_port(port_index);
    if (protocol == 0U) {
       const float value = *(const float *)buffer;
-      printf("\nWrite to control port %d value %f", port_index, value);
-      fflush(stdout);
+      pw_log_trace("Write to control port %d value %f", port_index, value);
       //  do something here ...
    } else if (protocol == constants.atom_eventTransfer) {
       const LV2_Atom *const atom = (const LV2_Atom *)buffer;
       if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
-         printf("\nWrite to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
-         fflush(stdout);
+         pw_log_error("Write to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
       } else {
-         // printf("\n[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
-         //        engine->enginename, port_index, buffer_size, atom->size, atom->type,
-         //        constants_unmap(constants, atom->type));
-         // fflush(stdout);
+         pw_log_trace("[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
+                 config_nodename, port_index, buffer_size, atom->size, atom->type,
+                 constants_unmap(constants, atom->type));
 
          uint16_t len = buffer_size;
          if (buffer_size > MAX_ATOM_MESSAGE_SIZE) {
-            fprintf(stderr, "Payload too large\n");
+            pw_log_error("Payload too large");
          } else {
             uint8_t temp[MAX_ATOM_MESSAGE_SIZE + sizeof(uint16_t)];
             memcpy(temp, &len, sizeof(uint16_t));

@@ -58,7 +58,6 @@ static void process_work_responses() {
          memcpy(payload, buffer + offset, space);
          memcpy(payload + space, buffer, msg_len - space);
       }
-      // printf("\nCall work_response from on_process");fflush(stdout);
       if (host->iface && host->iface->work_response)
          host->iface->work_response(host->handle, msg_len, payload);
 

@@ -47,7 +47,7 @@ static LV2_URID uri_table_map(LV2_URID_Map_Handle handle, const char *uri) {
    i = pw_array_get_len(&table->array, char *);
 done:
 
-   // printf("\nuri_table_map  %s %d",uri,i);fflush(stdout);
+   pw_log_trace("uri_table_map  %s %d",uri,i);
 
    return i;
 }

@@ -45,6 +45,9 @@ add_executable(elvira
     src/handler_param.c
     src/handler_command.c
     src/handler_host.c
+    src/handler_state.c
+    src/handler_registry.c
+    src/handler_metadata.c
     src/handler_ui.c
     src/constants.c
     src/runtime.c

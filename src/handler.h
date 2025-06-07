@@ -38,6 +38,13 @@ extern void on_process(void *data, struct spa_io_position *position);
 extern void on_drained(void *data);
 extern void on_command(void *data, const struct spa_command *command);
 
+extern void on_registry_global(void *object, uint32_t id, uint32_t permissions, const char *type, uint32_t version,  const struct spa_dict *props);
+extern int on_metadata_property(void *object,                                                                                                                                                      
+                                 uint32_t subject,                                                                                                                                                 
+                                 const char *key,                                                                                                                                                  
+                                 const char *type,                                                                                                                                                 
+                                 const char *value);
+
 extern int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
                           size_t size, void *user_data);
 extern int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *data,

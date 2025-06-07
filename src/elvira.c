@@ -37,7 +37,6 @@ static void startup() {
    host->suil_instance = NULL;
    printf("\nStarting engine %s %s (%s)\n\n", config_nodename, config_plugin_uri,
           config_preset_uri);
-   fflush(stdout);
    pw_thread_loop_start(runtime_primary_event_loop);
    pw_thread_loop_start(runtime_worker_event_loop);
 
@@ -71,7 +70,6 @@ int main(int argc, char **argv) {
    sprintf(lv2_path, "%s/.lv2:/usr/lib/lv2", getenv("HOME"));
    setenv("LV2_PATH", lv2_path, 0);
    printf("\nlv2_path [%s]", getenv("LV2_PATH"));
-   fflush(stdout);
 
    // Potentially used when creating presets, so create it here in case
    mkdir("/tmp/elvira", 0777);

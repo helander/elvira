@@ -31,7 +31,7 @@ static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, co
                                             const void *data) {
    uint16_t len = size;
    if (size > MAX_WORK_RESPONSE_MESSAGE_SIZE) {
-      fprintf(stderr, "Payload too large\n");
+      pw_log_error("Payload too large");
    } else {
       uint8_t temp[MAX_WORK_RESPONSE_MESSAGE_SIZE + sizeof(uint16_t)];
       memcpy(temp, &len, sizeof(uint16_t));
@@ -103,8 +103,7 @@ int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
             const LV2_Feature *features[] = {&urid_feature, NULL};
 
             lilv_state_restore(state, host->instance, NULL, NULL, 0, features);
-            printf("\nPreset with URI: %s applied\n", preset_uri);
-            fflush(stdout);
+            pw_log_info("Preset with URI: %s applied", preset_uri);
 
             pw_thread_loop_lock(runtime_primary_event_loop);
 
@@ -115,12 +114,10 @@ int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
             pw_thread_loop_unlock(runtime_primary_event_loop);
 
          } else {
-            printf("\nNo preset to load.");
-            fflush(stdout);
+            pw_log_error("No preset to load.");
          }
       } else {
-         printf("\nNo preset specified.");
-         fflush(stdout);
+         pw_log_error("No preset specified.");
       }
    }
    return 0;
@@ -140,7 +137,7 @@ int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
           preset_dir, port_value, host, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE, features);
 
       if (!state) {
-         fprintf(stderr, "\nFailed to create the preset state");
+         pw_log_error("Failed to create the preset state");
          return -1;
       }
 
@@ -160,7 +157,7 @@ int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       // methods that should be tested?
       lilv_world_load_all(constants.world);
 
-      printf("\nPreset saved to %s with URI: %s\n", preset_dir, preset_uri);
+      pw_log_debug("Preset saved to %s with URI: %s", preset_dir, preset_uri);
    }
    return 0;
 }

@@ -73,9 +73,9 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
    }
    lilv_node_free(host_type);
 
-   printf("Plugin: %s\n\n", lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)));
-   printf("Selected UI: %s\n\n", lilv_node_as_string(lilv_ui_get_uri(selectedUI)));
-   printf("Selected UI type: %s\n\n", lilv_node_as_string(selected_ui_type));
+   pw_log_info("Plugin: %s", lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)));
+   pw_log_info("Selected UI: %s", lilv_node_as_string(lilv_ui_get_uri(selectedUI)));
+   pw_log_info("Selected UI type: %s", lilv_node_as_string(selected_ui_type));
 
    const LV2_Feature instance_feature = {LV2_INSTANCE_ACCESS_URI,
                                          lilv_instance_get_handle(host->instance)};
@@ -103,8 +103,7 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
       gtk_container_add(GTK_CONTAINER(plugin_window), plugin_widget);
       gtk_widget_show_all(plugin_window);
    } else {
-      printf("\nCould not create UI for %s", config_nodename);
-      fflush(stdout);
+      pw_log_error("Could not create UI for %s", config_nodename);
    }
    return 0;
 }

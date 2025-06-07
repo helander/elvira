@@ -56,10 +56,10 @@ static void load_plugin() {
       plugin = (LilvPlugin *)lilv_plugins_get_by_uri(plugins, uri);
       lilv_node_free(uri);
       if (plugin == NULL) {
-         printf("\ncan't load plugin %s", config_plugin_uri);
+         pw_log_error("Host can't load plugin %s", config_plugin_uri);
       }
    } else {
-      printf("\nerror in URI %s", config_plugin_uri);
+      pw_log_error("Host plugin error in URI %s", config_plugin_uri);
    }
    host->lilvPlugin = plugin;
 }
@@ -200,7 +200,7 @@ void host_ports_discover() {
       } else {
          free(port);
          port = NULL;
-         printf("\nUnsupported port type: port #%d (%s)", port->index, port->name);
+         pw_log_error("Host unsupported port type: port #%d (%s)", port->index, port->name);
       }
       set_add(&host->ports, port);
    }

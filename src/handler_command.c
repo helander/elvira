@@ -49,7 +49,7 @@ void on_command(void *data, const struct spa_command *command) {
                      pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop),
                                     on_host_save, 0, args, strlen(args) + 1, false, NULL);
                   } else {
-                     printf("\nUnknown command [%s]", command_string);
+                     pw_log_error("Unknown command [%s]", command_string);
                   }
                }
             }
