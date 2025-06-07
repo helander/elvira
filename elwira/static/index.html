@@ -18,6 +18,20 @@
       background-color: #f0f0f0;
     }
   </style>
+
+  <style>
+    #popup {
+      display: none;
+      position: fixed;
+      top: 30%;
+      left: 40%;
+      background: #f0f0f0;
+      border: 1px solid #aaa;
+      padding: 20px;
+      z-index: 1000;
+    }
+  </style>
+
 </head>
 <body>
 <img src="img/elvira.svg" />
@@ -25,18 +39,27 @@
 <div>
    <select id="plugin-select"></select>
    <input id="engine-name"/>
-   <button onclick="create_engine()">Create engine</button>
+   <button onclick="create_engine()">Create instance</button>
 </div>
-  <h2 style="text-align:center;">elvira engines</h2>
+
+  <h2 style="text-align:center;">test</h2>
+
+
+<!-- Popup Form -->
+<div id="popup">
+  <input type="text" id="textInput" placeholder="Enter text" />
+  <button onclick="submitText()">Submit</button>
+</div>
+
+  <h2 style="text-align:center;">elvira instances</h2>
 
   <table id="engine-table">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Set</th>
-        <th>Plugin</th>
-        <th>Preset</th>
+        <th>pw node id</th>
+        <th>instance</th>
+        <th>plugin</th>
+        <th>preset</th>
       </tr>
     </thead>
     <tbody>
@@ -103,9 +126,10 @@ function create_engine() {
           row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.name}</td>
-            <td>${item.set}</td>
             <td>${item.plugin}</td>
             <td id="preset-${item.id}"></td>
+            <td><button onclick="showPopup(this)" data-id="${item.id}">Save</button></td>
+            <td><button onclick="delete_engine(${item.id})">Delete</button></td>
           `;
           const node_id = item.id;
           tableBody.appendChild(row);
@@ -199,6 +223,31 @@ function create_engine() {
 
 
 
+function delete_engine(node_id) {
+   fetch('/cgi-bin/delete_engine.sh', {
+      method: 'PUT',
+      headers: {
+         'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+         node_id: node_id,
+      })
+   })
+   .then(response => {
+      if (!response.ok) {
+         throw new Error('Network response was not ok');
+      }
+      return response.text();
+   })
+   .then(text => {
+      document.getElementById('output').textContent = text;
+   })
+   .catch(error => {
+      console.error('Fetch error:', error);
+      document.getElementById('output').textContent = 'Error: ' + error.message;
+   });
+}
+
 function apply_preset(node_id, preset_uri) {
    console.log(`Apply preset ${preset_uri} on node ${node_id}`);
    fetch('/cgi-bin/command.sh', {
@@ -227,40 +276,59 @@ function apply_preset(node_id, preset_uri) {
    });
 }
 
-/*
+function save_preset(node_id, preset_name) {
+   console.log(`Save preset ${preset_name} on node ${node_id}`);
+   fetch('/cgi-bin/command.sh', {
+      method: 'PUT',
+      headers: {
+         'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+         node_id: node_id,
+         command: 'save',
+         preset_uri: preset_name
+      })
+   })
+   .then(response => {
+      if (!response.ok) {
+         throw new Error('Network response was not ok');
+      }
+      return response.text();
+   })
+   .then(text => {
+      document.getElementById('output').textContent = text;
+   })
+   .catch(error => {
+      console.error('Fetch error:', error);
+      document.getElementById('output').textContent = 'Error: ' + error.message;
+   });
+}
 
-fetch('/cgi-bin/handler.sh', {
-  method: 'PUT',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ name: 'Alice' })
-})
-.then(response => {
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  return response.text();
-})
-.then(text => {
-  document.getElementById('output').textContent = text;
-})
-.catch(error => {
-  console.error('Fetch error:', error);
-  document.getElementById('output').textContent = 'Error: ' + error.message;
-});
 
-*/
-
-
-
- /*
-
-
-*/
 
 
   </script>
+<script>
+
+  let currentValue = null;
+
+  function submitText() {
+    const text = document.getElementById('textInput').value;
+    save_preset(currentValue,text);
+      document.getElementById('popup').style.display = 'none';
+      document.getElementById('textInput').value = ''; // Clear in
+  }
+
+  function showPopup(button) {
+    // Save the button-specific value
+    currentValue = button.getAttribute('data-id');
+
+    // Show the popup
+    document.getElementById('popup').style.display = 'block';
+  }
+
+
+</script>
 
 
 <div id="output"></div>

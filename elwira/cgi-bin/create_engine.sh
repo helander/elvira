@@ -31,4 +31,4 @@ systemd-run --user \
   --property=Environment="XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}" \
   --property=Environment="LV2_PATH=${LV2_PATH}" \
   --property=Environment="DISPLAY=${DISPLAY}" \
-  /home/soundcan/elwira/tempdir/elvira --showui  $name $uri
+  elvira --showui  $name $uri
