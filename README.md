@@ -39,6 +39,17 @@ foo@bar:~$ systemctl --user status elvira.myname
 
 In case you need to see more output than provided with above command, please see the journalctl documentation.
 
+# LV2_PATH
+The LV2_PATH environment variable control where in the filesystem various lv2 related libraries looks for resources (e.g. plugins, presets). 
+For elvira to work it is important that this variable is properly set. In case it is unset, elvira will set it to a value corresponding
+to the following setting:
+```console
+foo@bar:~$ export LV2_PATH=$HOME/.lv2:/usr/lib/lv2
+
+```
+
+The elvira function to save a preset of its current state, will save the preset information at $HOME/.lv2 . 
+In order for the saved preset to be used, it is vital that this location is part of LV2_PATH.
 
 # Basic terminology
 An elvira program contains one single lv2 plugin instance. The elvira program calls the plugin instance and its associated resources an *lv2 host*. In addition to the *lv2 host*, the program also contains a *pipewire node*.
