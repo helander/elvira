@@ -17,27 +17,35 @@ There are very few dependencies so building on most linux systems should be pret
 The *tools/build* script along with the CMakeLists.txt should both be rather easy to understand, but in case you have problems I can probably help.
 The build script will install elvira as /usr/bin/elvira.
 
+In the elwira folder you find a web server program that contains a simple web page to control your elvira program instances. The web server program, called elwira, is a self contained
+single executable file. To build the elwira executable do (you need go development tools installed)
+```console
+foo@bar:~$ cd elwira
+foo@bar:~$ go build
+
+```
+
 # Running
 Running is simple since elvira is just a single executable file. As long as the elvira binary is in your PATH, just run elvira at your shell prompt:
 ```console
 foo@bar:~$ elvira myname http://example.net/lv2/plugin/myplugin --showui
 
 ```
-
-In case you are on a system with systemd, you can use the script at systemd/run_elvira_service.sh (same command line parameters as the elvira program). This will start the elvira program as a
-systemd service and disconnected from your shell i/o. 
+To run the elwira web server do
 ```console
-foo@bar:~$ ./systemd/run_elvira_service.sh myname http://example.net/lv2/plugin/myplugin --showui
+foo@bar:~$ ./elwira/elwira
 
 ```
+The elwira program prints the url of the elvira control page, so just open your browser on this url. 
+The elwira program interacts with the pipewire and lv2 tools on your system. The following CLI programs needs to be available:
+* lv2ls
+* lv2info
+* pw-cli
+* pw-dump
+* pw-metadata
 
-You can see the stdout/stderr of the service using:
-```console
-foo@bar:~$ systemctl --user status elvira.myname
-
-```
-
-In case you need to see more output than provided with above command, please see the journalctl documentation.
+In order to use elvira, pipewire must be installed on your system and then you will most likely have the required pw-* programs. The
+lv2 programs are typically found in a package named lilv-utils or similar.
 
 # LV2_PATH
 The LV2_PATH environment variable control where in the filesystem various lv2 related libraries looks for resources (e.g. plugins, presets). 
@@ -69,9 +77,31 @@ On some type of ports, namely *Audio ports*, this mapping is very easy to achiev
 mostly due to similar semantics and implementation strategies. 
 
 For other ports, like the *lv2 Control ports*, there is really no correspondence to any pipewire port type.
-Luckily, for many cases it is enough to manage this via the command mention above, to assign values to control ports.
+Luckily, for many cases it is enough to manage this via a shell command, to assign values to control ports.
 
 The *pipewire Control ports* are similar in nature to the *lv2 Atom ports*. This is especially true for carrying of *Midi* messages.
+
+# Principle of operation
+```mermaid
+sequenceDiagram
+    actor rt_thread as RT thread<br/>(pw managed)
+    participant ports as Ports<br/>(elvira module)
+    participant handlers as Handlers<br/>(elvira module)
+    participant plugin as plugin<br/>(lv2 instance)
+    loop Pipewire periodic execution
+       rt_thread->>+handlers: on_process
+       handlers-->>+ports: copy inputs to plugin
+       ports->>-handlers:  
+       handlers-->>+plugin: run
+       plugin->>-handlers: 
+       handlers-->>+ports: copy outputs from plugin
+       ports->>-handlers: 
+       handlers->>-rt_thread: 
+    end
+```
+This diagram shoś the core operation of the elvira program. Assisted by the pipewire infrastructure a realtime thread cyclically calls elvira's on_process handler. The handler
+copies data from pipewire input ports to the plugin's input ports. The the plugin's run method is called. When run is done, the handler copies data from the plugin's output ports to pipewire
+output ports. This process is then repeated over and over again.
 
 # Software architecture
 The following diagram exposes a number of different aspects of the elvira software architecture. More detailed information is available in the code itself. A lot of the functionality of the elvira implementation comes from the used components, such as pipewire, lv2, lilv, suil, etc. The functionality of these componenents is documented elsewhere.
