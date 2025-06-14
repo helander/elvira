@@ -10,7 +10,7 @@ Pipewire is a great fit for implementing an lv2 host.
 A lot of functionality required for the elvira program is provided by the pipewire client API. In addition the pipewire infrastructure provides
 features that can help implement various lv2 plugin related management scenarios. 
 As an example, I have created a web based management interface for elvira, that automatically discovers all elvira program instances and let you perform some basic tasks towards these instances.
-This web application will soon be made available via this page.
+Note, that no time has been spent on making this page look good.
 
 # Building
 There are very few dependencies so building on most linux systems should be pretty straight forward.
@@ -99,8 +99,8 @@ sequenceDiagram
        handlers->>-rt_thread: 
     end
 ```
-This diagram shoś the core operation of the elvira program. Assisted by the pipewire infrastructure a realtime thread cyclically calls elvira's on_process handler. The handler
-copies data from pipewire input ports to the plugin's input ports. The the plugin's run method is called. When run is done, the handler copies data from the plugin's output ports to pipewire
+This diagram shows the core operation of the elvira program. Assisted by the pipewire infrastructure a realtime thread cyclically calls elvira's on_process handler. The handler
+copies data from pipewire input ports to the plugin's input ports. Then the plugin's run method is called. When run is done, the handler copies data from the plugin's output ports to pipewire
 output ports. This process is then repeated over and over again.
 
 # Software architecture
