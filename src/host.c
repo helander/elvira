@@ -7,7 +7,7 @@
  *
  *  Description:
  *      lv2 host related functions.
- *      
+ *
  * ============================================================================
  */
 
@@ -31,6 +31,7 @@
 /*                               Local State                                  */
 /* ========================================================================== */
 static Host the_host;
+static char info[20000];
 
 /* ========================================================================== */
 /*                              Local Functions                               */
@@ -204,4 +205,103 @@ void host_ports_discover() {
       }
       set_add(&host->ports, port);
    }
+}
+
+char *host_info_base() {
+   const LilvPlugin *p = host->lilvPlugin;
+   strcpy(info, "{");
+
+   strcat(info, "\"uri\":");
+   strcat(info, "\"");
+   strcat(info, lilv_node_as_string(lilv_plugin_get_uri(p)));
+   strcat(info, "\"");
+   strcat(info, ",\"name\":");
+   strcat(info, "\"");
+   strcat(info, lilv_node_as_string(lilv_plugin_get_name(p)));
+   strcat(info, "\"");
+   strcat(info, "}");
+
+   return info;
+}
+
+char *host_info_ports() {
+   const LilvPlugin *p = host->lilvPlugin;
+   strcpy(info, "[");
+
+   uint32_t num_ports = lilv_plugin_get_num_ports(p);
+   for (uint32_t i = 0; i < num_ports; ++i) {
+      const LilvPort *port = lilv_plugin_get_port_by_index(p, i);
+      const LilvNode *symbol = lilv_port_get_symbol(p, port);
+      const LilvNode *name = lilv_port_get_name(p, port);
+      const char *ssymbol = lilv_node_as_string(symbol);
+      const char *sname = lilv_node_as_string(name);
+
+      if (i) strcat(info, ",");
+      strcat(info, "{");
+      sprintf(info + strlen(info), "\"index\":%d", i);
+      sprintf(info + strlen(info), ",\"symbol\":\"%s\"", ssymbol);
+      sprintf(info + strlen(info), ",\"name\":\"%s\"", sname);
+
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_INPUT_PORT))) {
+         sprintf(info + strlen(info), ",\"input\":true");
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_OUTPUT_PORT))) {
+         sprintf(info + strlen(info), ",\"output\":true");
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_AUDIO_PORT))) {
+         sprintf(info + strlen(info), ",\"audio\":true");
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_CONTROL_PORT))) {
+         sprintf(info + strlen(info), ",\"control\":true");
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_ATOM_PORT))) {
+         sprintf(info + strlen(info), ",\"atom\":true");
+      }
+
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_CONTROL_PORT))) {
+         LilvNode *lv2_default = lilv_new_uri(constants.world, LILV_NS_LV2 "default");
+         LilvNode *default_val = lilv_port_get(p, port, lv2_default);
+         if (default_val) {
+            sprintf(info + strlen(info), ",\"default\":%f", lilv_node_as_float(default_val));
+         }
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_CONTROL_PORT))) {
+         LilvNode *lv2_min = lilv_new_uri(constants.world, LILV_NS_LV2 "minimum");
+         LilvNode *min_val = lilv_port_get(p, port, lv2_min);
+         if (min_val) {
+            sprintf(info + strlen(info), ",\"min\":%f", lilv_node_as_float(min_val));
+         }
+      }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_CONTROL_PORT))) {
+         LilvNode *lv2_max = lilv_new_uri(constants.world, LILV_NS_LV2 "maximum");
+         LilvNode *max_val = lilv_port_get(p, port, lv2_max);
+         if (max_val) {
+            sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
+         }
+      }
+
+      LilvScalePoints *points = lilv_port_get_scale_points(p, port);
+      if (points) {
+         strcat(info, ",\"scale\":[");
+         LILV_FOREACH(scale_points, i, points) {
+            const LilvScalePoint *point = lilv_scale_points_get(points, i);
+            if (i) strcat(info, ",");
+            sprintf(info + strlen(info), "{\"%s\":%f}",
+                    lilv_node_as_string(lilv_scale_point_get_label(point)),
+                    lilv_node_as_float(lilv_scale_point_get_value(point)));
+         }
+         strcat(info, "]");
+         lilv_scale_points_free(points);
+      }
+
+      // supported events
+      // designations
+      // groups
+      // port properties
+      strcat(info, "}");
+   }
+
+   strcat(info, "]");
+
+   return info;
 }
