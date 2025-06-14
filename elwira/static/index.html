@@ -1,8 +1,21 @@
+<!--
+   File:           index.html
+   Project:        elvira
+   Author:         Lars-Erik Helander <lehswel@gmail.com>
+   License:        MIT
+   Description:    Simple control page for elvira instances
+-->
 <!DOCTYPE html>
 <html lang="en">
+  <!-- ========================================================================================= -->
+  <!-- Page header -->
+  <!-- ========================================================================================= -->
 <head>
   <meta charset="UTF-8">
   <title>elvira</title>
+  <!-- ========================================================================================= -->
+  <!-- Style -->
+  <!-- ========================================================================================= -->
   <style>
     table {
       border-collapse: collapse;
@@ -18,9 +31,18 @@
       background-color: #f0f0f0;
     }
   </style>
-
   <style>
-    #popup {
+    #save-preset-popup {
+      display: none;
+      position: fixed;
+      top: 30%;
+      left: 40%;
+      background: #f0f0f0;
+      border: 1px solid #aaa;
+      padding: 20px;
+      z-index: 1000;
+    }
+    #new-instance-popup {
       display: none;
       position: fixed;
       top: 30%;
@@ -31,32 +53,31 @@
       z-index: 1000;
     }
   </style>
-
 </head>
+  <!-- ========================================================================================= -->
+  <!-- Page body -->
+  <!-- ========================================================================================= -->
 <body>
-<img src="img/elvira.svg" />
+  <!-- ========================================================================================= -->
+  <!-- elvira logo -->
+  <!-- ========================================================================================= -->
+  <img src="img/elvira.svg" />
 
-<div>
-   <select id="plugin-select"></select>
-   <input id="engine-name"/>
-   <button onclick="create_engine()">Create instance</button>
-</div>
-
-  <h2 style="text-align:center;">test</h2>
-
-
-<!-- Popup Form -->
-<div id="popup">
-  <input type="text" id="textInput" placeholder="Enter text" />
-  <button onclick="submitText()">Submit</button>
-</div>
-
+  <!-- ========================================================================================= -->
+  <!-- Create new instance -->
+  <!-- ========================================================================================= -->
+  <h2>New elvira instance</h2>
+  <select id="plugin-select"></select><br>
+  <!--input id="instance-name"/>
+  <button onclick="create_instance()">Create</button-->
+  <!-- ========================================================================================= -->
+  <!-- elvira instances -->
+  <!-- ========================================================================================= -->
   <h2 style="text-align:center;">elvira instances</h2>
-
-  <table id="engine-table">
+  <table id="instance-table">
     <thead>
       <tr>
-        <th>pw node id</th>
+        <th>pipewire node id</th>
         <th>instance</th>
         <th>plugin</th>
         <th>preset</th>
@@ -67,270 +88,27 @@
     </tbody>
   </table>
 
-  <!--table id="preset-table">
-    <thead>
-      <tr>
-        <th>uri</th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </table-->
+  <!-- ========================================================================================= -->
+  <!-- New preset popup-->
+  <!-- ========================================================================================= -->
+  <div id="save-preset-popup">
+    <input type="text" id="save-preset-name" placeholder="Preset name" />
+    <button onclick="submit_save_preset()">Save</button>
+    <button onclick="cancel_save_preset()">Cancel</button>
+  </div>
 
-  <select id="preset-select">
-  </select>
+  <!-- ========================================================================================= -->
+  <!-- New instance popup-->
+  <!-- ========================================================================================= -->
+  <div id="new-instance-popup">
+    <input type="text" id="new-instance-name" placeholder="Instance name" />
+    <button onclick="submit_new_instance()">Create</button>
+    <button onclick="cancel_new_instance()">Cancel</button>
+  </div>
 
-  <script>
-
-function create_engine() {
-   const plugin = document.querySelector('#plugin-select');
-   const engine = document.querySelector('#engine-name');
-   console.log('plugin',plugin.value,'engine',engine.value);
-          {
-            const baseUrl = "/cgi-bin/create_engine.sh";
-
-            const params = new URLSearchParams({
-               name: engine.value,
-               uri: plugin.value
-            });
-
-            fetch(`${baseUrl}?${params.toString()}`)
-            .then(response => {
-                 if (!response.ok) throw new Error('Network response was not ok');
-                 return response.text();
-            })
-            .then(data => {
-            })
-            .catch(error => {
-                console.error('presets Fetch error:', error);
-            });
-          }    
-
-
-
-
-
-}
-
-
-    fetch("/cgi-bin/engines.sh")
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.json();
-      })
-      .then(data => {
-        const tableBody = document.querySelector('#engine-table tbody');
-
-        data.forEach(item => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${item.id}</td>
-            <td>${item.name}</td>
-            <td>${item.plugin}</td>
-            <td id="preset-${item.id}"></td>
-            <td><button onclick="showPopup(this)" data-id="${item.id}">Save</button></td>
-            <td><button onclick="delete_engine(${item.id})">Delete</button></td>
-          `;
-          const node_id = item.id;
-          tableBody.appendChild(row);
-
-
-          {
-            const baseUrl = "/cgi-bin/plugin_presets.sh";
-
-            const params = new URLSearchParams({
-               uri: item.plugin
-            });
-
-            fetch(`${baseUrl}?${params.toString()}`)
-            .then(response => {
-                 if (!response.ok) throw new Error('Network response was not ok');
-                 return response.json();
-            })
-            .then(data => {
-                 const presetTd = document.querySelector(`#preset-${item.id}`);
-                 const presetSelect = document.createElement("select");
-                 console.log(presetSelect,presetTd,data);
-                 const empty = document.createElement('option');
-                 //empty.selected = true;
-                 empty.innerHTML = "";
-                 presetSelect.appendChild(empty);
-                 data.forEach(item => {
-                   const opt = document.createElement('option');
-                   opt.innerHTML = `${item}`;
-                   presetSelect.appendChild(opt);
-
-
-                 });
-
-                 for (let i = 0; i < presetSelect.options.length; i++) {
-                   if (presetSelect.options[i].text === item.preset) {
-                     presetSelect.selectedIndex = i;
-                     break;
-                   }
-                 }
-                 console.log("add select");
-                   presetSelect.addEventListener('change', function(event) {
-                     console.log('Selected value:', event.target.value);
-                     if (event.target.value != '') apply_preset(node_id,event.target.value);
-                   });
-                 presetTd.appendChild(presetSelect);
-                 console.log("select added");
-            })
-            .catch(error => {
-                console.error('presets Fetch error:', error);
-            });
-          }    
-
-        });
-      })
-      .catch(error => {
-        console.error('engines Fetch error:', error);
-        const tableBody = document.querySelector('#engine-table tbody');
-        tableBody.innerHTML = `<tr><td colspan="3">Failed to load data</td></tr>`;
-      });
-
-
-
-          {
-            const baseUrl = "/cgi-bin/lv2ls.sh";
-
-
-            fetch(baseUrl)
-            .then(response => {
-                 if (!response.ok) throw new Error('Network response was not ok');
-                 return response.json();
-            })
-            .then(data => {
-                 const pluginSelect = document.querySelector("#plugin-select");
-                 data.forEach(item => {
-                   const opt = document.createElement('option');
-                   opt.innerHTML = `${item}`;
-                   pluginSelect.appendChild(opt);
-
-
-                 });
-
-                   pluginSelect.addEventListener('change', function(event) {
-                     console.log('Selected value:', event.target.value);
-                   });
-
-            })
-            .catch(error => {
-                console.error('presets Fetch error:', error);
-            });
-          }    
-
-
-
-function delete_engine(node_id) {
-   fetch('/cgi-bin/delete_engine.sh', {
-      method: 'PUT',
-      headers: {
-         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-         node_id: node_id,
-      })
-   })
-   .then(response => {
-      if (!response.ok) {
-         throw new Error('Network response was not ok');
-      }
-      return response.text();
-   })
-   .then(text => {
-      document.getElementById('output').textContent = text;
-   })
-   .catch(error => {
-      console.error('Fetch error:', error);
-      document.getElementById('output').textContent = 'Error: ' + error.message;
-   });
-}
-
-function apply_preset(node_id, preset_uri) {
-   console.log(`Apply preset ${preset_uri} on node ${node_id}`);
-   fetch('/cgi-bin/command.sh', {
-      method: 'PUT',
-      headers: {
-         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-         node_id: node_id,
-         command: 'preset',
-         preset_uri: preset_uri
-      })
-   })
-   .then(response => {
-      if (!response.ok) {
-         throw new Error('Network response was not ok');
-      }
-      return response.text();
-   })
-   .then(text => {
-      document.getElementById('output').textContent = text;
-   })
-   .catch(error => {
-      console.error('Fetch error:', error);
-      document.getElementById('output').textContent = 'Error: ' + error.message;
-   });
-}
-
-function save_preset(node_id, preset_name) {
-   console.log(`Save preset ${preset_name} on node ${node_id}`);
-   fetch('/cgi-bin/command.sh', {
-      method: 'PUT',
-      headers: {
-         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-         node_id: node_id,
-         command: 'save',
-         preset_uri: preset_name
-      })
-   })
-   .then(response => {
-      if (!response.ok) {
-         throw new Error('Network response was not ok');
-      }
-      return response.text();
-   })
-   .then(text => {
-      document.getElementById('output').textContent = text;
-   })
-   .catch(error => {
-      console.error('Fetch error:', error);
-      document.getElementById('output').textContent = 'Error: ' + error.message;
-   });
-}
-
-
-
-
-  </script>
-<script>
-
-  let currentValue = null;
-
-  function submitText() {
-    const text = document.getElementById('textInput').value;
-    save_preset(currentValue,text);
-      document.getElementById('popup').style.display = 'none';
-      document.getElementById('textInput').value = ''; // Clear in
-  }
-
-  function showPopup(button) {
-    // Save the button-specific value
-    currentValue = button.getAttribute('data-id');
-
-    // Show the popup
-    document.getElementById('popup').style.display = 'block';
-  }
-
-
-</script>
-
-
-<div id="output"></div>
+  <!-- ========================================================================================= -->
+  <!-- Script -->
+  <!-- ========================================================================================= -->
+  <script src="/elvira.js"></script>
 </body>
 </html>

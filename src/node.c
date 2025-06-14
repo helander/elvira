@@ -142,7 +142,8 @@ int node_setup() {
 
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, NULL);
-   pw_properties_set(props, "elvira.role", "engine");
+   pw_properties_set(props, "media.name", "");
+   pw_properties_set(props, "elvira.role", "instance");
    pw_properties_set(props, "elvira.plugin", config_plugin_uri);
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());

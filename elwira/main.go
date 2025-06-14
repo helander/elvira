@@ -1,10 +1,17 @@
+// =====================================================================================================
+// File:           main.go
+// Project:        elvira
+// Author:         Lars-Erik Helander <lehswel@gmail.com>
+// License:        MIT
+// Description:    Web server with CGI support and embedded static content
+// =====================================================================================================
+
 package main
 
 import (
 	"embed"
 	"fmt"
 	"io/fs"
-//	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cgi"
@@ -15,13 +22,22 @@ import (
 	"context"
 )
 
+// =====================================================================================================
+// Types & constants
+// =====================================================================================================
+
+// =====================================================================================================
+// Local state
+// =====================================================================================================
 //go:embed static/* cgi-bin/*
 var embeddedFiles embed.FS
 /**/
 
 var tmpCgiDir string
 
-
+// =====================================================================================================
+// Local functions
+// =====================================================================================================
 func extractCGIScripts() error {
 	entries, err := fs.ReadDir(embeddedFiles, "cgi-bin")
 	if err != nil {
@@ -44,28 +60,28 @@ func extractCGIScripts() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("CGI-skript extraherat: %s", dstPath)
+		log.Printf("CGI-script extracted: %s", dstPath)
 	}
 
 	return nil
 }
 
+// =====================================================================================================
+// Main
+// =====================================================================================================
 func main() {
-	// Extrahera CGI-skript
 	if err := extractCGIScripts(); err != nil {
-		log.Fatal("Kunde inte extrahera CGI-skript:", err)
+		log.Fatal("Error extracting CGI-script:", err)
 	}
-	// Skapa signalhanterare
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// När programmet avslutas (normalt eller via signal)
 	defer func() {
-		log.Println("Rensar temporär katalog:", tmpCgiDir)
+		log.Println("Clean temporary storage:", tmpCgiDir)
 		os.RemoveAll(tmpCgiDir)
 	}()
 
-	// Statiska filer via embed
+	// Embedded static files
 	staticFS, _ := fs.Sub(embeddedFiles, "static")
 	http.Handle("/", http.FileServer(http.FS(staticFS)))
 
@@ -79,12 +95,10 @@ func main() {
 			return
 		}
 
-		// Skapa CGI-handler med miljövariabler
 		handler := &cgi.Handler{
 				Path: scriptPath,
 				Root: "/cgi-bin/",
 				Env: []string{
-					"SERVER_SOFTWARE=GoEmbeddedServer/1.0",
 					"PWD="+os.Getenv("PWD"), 
 					"HOME="+os.Getenv("HOME"), 
 					"XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"), 
@@ -96,25 +110,21 @@ func main() {
 		handler.ServeHTTP(w, r)
 	})))
 	port := 7000
-//	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
-	// Starta server i en separat goroutine
 	server := &http.Server{Addr: fmt.Sprintf(":%d", port)}
 
 	go func() {
-		log.Printf("Server startad på http://localhost:%d", port)
+		log.Printf("Server started at http://localhost:%d", port)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
 	}()
 
-	// Vänta på signal (Ctrl-C eller SIGTERM)
+	// Wait for signal (Ctrl-C or SIGTERM)
 	<-ctx.Done()
-	log.Println("Avslutar...")
+	log.Println("Terminating...")
 
-	// Stäng av servern snyggt
+	// Clean server shutdown
 	server.Shutdown(context.Background())
 
 }
-
-

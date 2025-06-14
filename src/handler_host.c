@@ -11,6 +11,7 @@
  * ============================================================================
  */
 
+#include <string.h>
 #include <lilv/lilv.h>
 #include <lv2/state/state.h>
 
@@ -27,6 +28,59 @@
 /* ========================================================================== */
 /*                              Local Functions                               */
 /* ========================================================================== */
+const char* get_preset_tail(const char* url) {
+    const char *last_slash = strrchr(url, '/');
+    if (!last_slash) {
+        return ""; // No slash at all
+    }
+
+    // Check if "preset" comes just before the last slash
+    size_t len_before = last_slash - url;
+    if (len_before >= 6 && strncmp(last_slash - 6, "preset", 6) == 0) {
+        return *(last_slash + 1) ? last_slash + 1 : ""; // Return after slash if anything exists
+    }
+
+    return ""; // Doesn't match "preset/" rule
+}
+
+static void apply_preset(char *preset_uri) {
+   if (strlen(preset_uri)) {
+      host->lilv_preset = lilv_new_uri(constants.world, preset_uri);
+
+      if (host->lilv_preset) {
+         lilv_world_load_resource(constants.world, host->lilv_preset);
+         LilvState *state =
+             lilv_state_new_from_world(constants.world, &constants.map, host->lilv_preset);
+         if (state) {
+            LV2_Feature urid_feature = {
+                .URI = LV2_URID__map,
+                .data = &constants.map,
+            };
+            const LV2_Feature *features[] = {&urid_feature, NULL};
+
+            lilv_state_restore(state, host->instance, NULL, NULL, 0, features);
+            pw_log_info("Preset with URI: %s applied", preset_uri);
+
+            pw_thread_loop_lock(runtime_primary_event_loop);
+
+            struct spa_dict_item items[2];
+            items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
+            items[1] = SPA_DICT_ITEM_INIT("media.name", get_preset_tail(preset_uri));
+            pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 2));
+
+
+
+            pw_thread_loop_unlock(runtime_primary_event_loop);
+
+         } else {
+            pw_log_error("No preset to load.");
+         }
+      } else {
+         pw_log_error("No preset specified.");
+      }
+   }
+}
+
 static LV2_Worker_Status the_worker_respond(LV2_Worker_Respond_Handle handle, const uint32_t size,
                                             const void *data) {
    uint16_t len = size;
@@ -88,38 +142,7 @@ int on_host_preset(struct spa_loop *loop, bool async, uint32_t seq, const void *
                    void *user_data) {
    char *preset_uri = (char *)data;
 
-   if (strlen(preset_uri)) {
-      host->lilv_preset = lilv_new_uri(constants.world, preset_uri);
-
-      if (host->lilv_preset) {
-         lilv_world_load_resource(constants.world, host->lilv_preset);
-         LilvState *state =
-             lilv_state_new_from_world(constants.world, &constants.map, host->lilv_preset);
-         if (state) {
-            LV2_Feature urid_feature = {
-                .URI = LV2_URID__map,
-                .data = &constants.map,
-            };
-            const LV2_Feature *features[] = {&urid_feature, NULL};
-
-            lilv_state_restore(state, host->instance, NULL, NULL, 0, features);
-            pw_log_info("Preset with URI: %s applied", preset_uri);
-
-            pw_thread_loop_lock(runtime_primary_event_loop);
-
-            struct spa_dict_item items[1];
-            items[0] = SPA_DICT_ITEM_INIT("elvira.preset", preset_uri);
-            pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
-
-            pw_thread_loop_unlock(runtime_primary_event_loop);
-
-         } else {
-            pw_log_error("No preset to load.");
-         }
-      } else {
-         pw_log_error("No preset specified.");
-      }
-   }
+   apply_preset(preset_uri);
    return 0;
 }
 
@@ -156,8 +179,10 @@ int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const void *da
       // having to restart the program. The methods below works, but is a bit "brutal". Any other
       // methods that should be tested?
       lilv_world_load_all(constants.world);
-
+     
       pw_log_debug("Preset saved to %s with URI: %s", preset_dir, preset_uri);
+
+      apply_preset(preset_uri);
    }
    return 0;
 }
