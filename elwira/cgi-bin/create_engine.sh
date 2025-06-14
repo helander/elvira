@@ -24,12 +24,9 @@ done
 name=${params["name"]}
 uri=${params["uri"]}
 
-systemd-run --user \
-  --unit="elvira.${name}" \
-  --description="elvira engine job ($name) ($uri)" \
-  --property=WorkingDirectory=$HOME \
-  --property=Environment="XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}" \
-  --property=Environment="LV2_PATH=${LV2_PATH}" \
-  --property=Environment="DISPLAY=${DISPLAY}" \
-  --property=Environment="PIPEWIRE_DEBUG=4" \
-  elvira --showui  $name $uri
+logfile=/tmp/elvira-${name}.log
+rm -f ${logfile}
+nohup elvira --showui ${name} ${uri} > ${logfile}  &
+# Remove the logfile once the elvira process terminates
+# the content is until then accessable via "cat /proc/<pid>/fd/1"
+unlink ${logfile}
