@@ -85,7 +85,8 @@ func main() {
 				Root: "/cgi-bin/",
 				Env: []string{
 					"SERVER_SOFTWARE=GoEmbeddedServer/1.0",
-					"SPECIAL_VAR=HejFrånGo", // Exempel på egen variabel
+					"PWD="+os.Getenv("PWD"), 
+					"HOME="+os.Getenv("HOME"), 
 					"XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"), 
 					"LV2_PATH="+os.Getenv("LV2_PATH"), 
 					"DISPLAY="+os.Getenv("DISPLAY"), 
