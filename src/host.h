@@ -17,6 +17,7 @@
 #include <lv2/atom/atom.h>
 #include <lv2/options/options.h>
 #include <lv2/worker/worker.h>
+#include <lv2/log/log.h>
 #include <spa/utils/ringbuffer.h>
 #include <suil/suil.h>
 
@@ -25,7 +26,7 @@
 /* ========================================================================== */
 /*                               Public Macros                                */
 /* ========================================================================== */
-#define ATOM_BUFFER_SIZE 16 * 1024
+#define ATOM_PORT_BUFFER_SIZE 4 * 1024
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
 
@@ -46,16 +47,14 @@ struct Host {
    LV2_Feature work_schedule_feature;
    LV2_Options_Option options[6];
    LV2_Feature options_feature;
-   const LV2_Feature *features[7];
+   LV2_Log_Log                plugin_log;
+   LV2_Feature                plugin_log_feature;
+   const LV2_Feature *features[20];
    struct spa_ringbuffer work_response_ring;
    uint8_t work_response_buffer[WORK_RESPONSE_RINGBUFFER_SIZE];
    int32_t block_length;
-   // bool start_ui;
    SuilInstance *suil_instance;
 
-   // char plugin_uri[200];
-   // char preset_uri[200];
-   // HostPort *ports;
    Set ports;
 };
 

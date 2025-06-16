@@ -9,8 +9,11 @@ In case you are missing something vital, do not hesitate to let me know.
 Pipewire is a great fit for implementing an lv2 host.
 A lot of functionality required for the elvira program is provided by the pipewire client API. In addition the pipewire infrastructure provides
 features that can help implement various lv2 plugin related management scenarios. 
+
 As an example, I have created a web based management interface for elvira, that automatically discovers all elvira program instances and let you perform some basic tasks towards these instances.
-Note, that no time has been spent on making this page look good.
+Note, that no time has been spent on making this page look good. The web interface application is called *elwira* (w=web).
+
+By nature elvira is a single plugin host, very much like *jalv*. With the web control application (elwira), you get a multi plugin host based on the single plugin host (elvira).
 
 # Building
 There are very few dependencies so building on most linux systems should be pretty straight forward.
@@ -46,6 +49,26 @@ The elwira program interacts with the pipewire and lv2 tools on your system. The
 
 In order to use elvira, pipewire must be installed on your system and then you will most likely have the required pw-* programs. The
 lv2 programs are typically found in a package named lilv-utils or similar.
+
+# Logs
+The elvira lv2 host provides the logging feature to its plugin. Any logging performed by the plugin is sent to the pipewire log for the elvira program. By default, the log of a pipewire client
+is printed on the client's stdout device.
+
+If you start an instance in a shell using the elvira program, its stdout device is the shell terminal (if no redirection is performed).
+
+In case you create an instance using the elwira web interface, the stdout is redirected to a file. This file is immediately marked for deletion, and will be deleted once the elvira
+process terminates. The reason is to ensure not to pollute the filesystem with old "logs". Until it is deleted, its content could be acceesed using
+
+```console
+foo@bar:~$ cat /proc/<pid>/fd/1
+
+```
+where <pid> should be replaced with the process id (pid) of the elvira process.
+
+All log entries coming from the plugin instance are tagged with "lv2.plugin", in order to easily be able to extract that specific type of information from the pipewire log.
+
+# Connections ?
+For managing connections (links) between elvira instances and the pipewire infrastructre I use *qpwgraph*, an excellent tool.
 
 # LV2_PATH
 The LV2_PATH environment variable control where in the filesystem various lv2 related libraries looks for resources (e.g. plugins, presets). 

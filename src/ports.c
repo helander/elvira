@@ -45,6 +45,16 @@ static void send_atom(int port_index, LV2_Atom *atom) {
                   port_index, atom, atom->size + sizeof(LV2_Atom), false, NULL);
 }
 
+
+
+static HostPort *find_host_port(uint32_t port_index) {
+   HostPort *host_port;
+   SET_FOR_EACH(HostPort *, host_port, &host->ports) {
+      if (host_port->index == port_index) return host_port;
+   }
+   return NULL;
+}
+
 static Port *find_port(uint32_t port_index) {
    Port *port;
    SET_FOR_EACH(Port *, port, &ports) {
@@ -88,7 +98,7 @@ void post_run_audio_output(Port *port) {}
 
 void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
-   aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
+   aseq->atom.size = ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom);
    lv2_atom_sequence_clear(aseq);
    aseq->atom.type = constants.atom_Sequence;
 
@@ -129,7 +139,7 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
          read_index += sizeof(uint16_t) + msg_len;
          spa_ringbuffer_read_update(&port->ring, read_index);
          LV2_Atom *atom = (LV2_Atom *)payload;
-         if (ATOM_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >=
+         if (ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >=
              sizeof(LV2_Atom_Event) + atom->size + sizeof(LV2_Atom)) {
             LV2_Atom_Event *aev =
                 (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
@@ -171,7 +181,7 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
             int midi_size =
                 spa_ump_to_midi((uint32_t *)ump_data, ump_size, midi_data, sizeof(midi_data));
             if (midi_data[0] == 0xf8) continue;
-            if (ATOM_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >=
+            if (ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >=
                 sizeof(LV2_Atom_Event) + midi_size) {
                LV2_Atom_Event *aev =
                    (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq) +
@@ -201,7 +211,7 @@ void post_run_control_input(Port *port) {
 
 void pre_run_control_output(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
-   aseq->atom.size = ATOM_BUFFER_SIZE - sizeof(LV2_Atom);
+   aseq->atom.size = ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom);
    aseq->atom.type = constants.atom_Chunk;
    port->node_port->pwbuffer = pw_filter_dequeue_buffer(port->node_port->pwPort);
 }
@@ -300,8 +310,18 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
    Port *port = find_port(port_index);
    if (protocol == 0U) {
       const float value = *(const float *)buffer;
-      pw_log_trace("Write to control port %d value %f", port_index, value);
-      //  do something here ...
+      pw_log_info("Write to control port %d value %f", port_index, value);
+      HostPort *host_port = find_host_port(port_index);
+      if (host_port == NULL) {
+         pw_log_error("No host port found for index %d", port_index);
+         return;
+      }
+      if (host_port->type != HOST_CONTROL_INPUT) {
+         pw_log_error("Index %d does not point to a control input port", port_index);
+         return;
+      }
+      host_port->current = value;
+      pw_log_info("Written to control port %d value %f", port_index, host_port->current);
    } else if (protocol == constants.atom_eventTransfer) {
       const LV2_Atom *const atom = (const LV2_Atom *)buffer;
       if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {

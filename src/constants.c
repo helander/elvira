@@ -14,6 +14,7 @@
 #include "constants.h"
 
 #include <lilv/lilv.h>
+#include <lv2/log/log.h>
 #include <lv2/patch/patch.h>
 #include <lv2/presets/presets.h>
 #include <pipewire/pipewire.h>
@@ -109,6 +110,10 @@ void constants_init() {
    constants.atom_Chunk = constants_map(constants, LV2_ATOM__Chunk);
    constants.atom_Sequence = constants_map(constants, LV2_ATOM__Sequence);
    constants.atom_eventTransfer = constants_map(constants, LV2_ATOM__eventTransfer);
+   constants.log_Error = constants_map(constants, LV2_LOG__Error);
+   constants.log_Warning = constants_map(constants, LV2_LOG__Warning);
+   constants.log_Note = constants_map(constants, LV2_LOG__Note);
+   constants.log_Trace = constants_map(constants, LV2_LOG__Trace);
 
    constants.rdfs_label = lilv_new_uri(constants.world, (LILV_NS_RDFS "label"));
    constants.pset_Preset = lilv_new_uri(constants.world, (LV2_PRESETS__Preset));

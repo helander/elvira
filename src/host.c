@@ -33,6 +33,8 @@
 static Host the_host;
 static char info[20000];
 
+PW_LOG_TOPIC_STATIC(lv2_topic, "lv2.plugin");
+
 /* ========================================================================== */
 /*                              Local Functions                               */
 /* ========================================================================== */
@@ -65,6 +67,25 @@ static void load_plugin() {
    host->lilvPlugin = plugin;
 }
 
+static int plugin_log_vprintf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, va_list ap) {
+    enum spa_log_level level = SPA_LOG_LEVEL_TRACE;
+    if (type == constants.log_Error) level = SPA_LOG_LEVEL_ERROR;
+    if (type == constants.log_Warning) level = SPA_LOG_LEVEL_WARN;
+    if (type == constants.log_Note) level = SPA_LOG_LEVEL_INFO;
+    if (type == constants.log_Trace) level = SPA_LOG_LEVEL_TRACE;
+
+    pw_logtv(level, lv2_topic, fmt, ap);
+    return 0;
+}
+
+static int plugin_log_printf(LV2_Log_Handle handle, LV2_URID type, const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int r = plugin_log_vprintf(handle, type, fmt, ap);
+    va_end(ap);
+    return r;
+}
+
 /* ========================================================================== */
 /*                               Public State                                 */
 /* ========================================================================== */
@@ -80,7 +101,7 @@ int host_setup() {
       uint32_t n_features = 0;
       static const int32_t min_block_length = 1;
       static const int32_t max_block_length = 8192;
-      static const int32_t seq_size = 32768;
+      static const int32_t seq_size = ATOM_PORT_BUFFER_SIZE;
       float fsample_rate = (float)config_samplerate;
 
       host->block_length = 1024;
@@ -90,6 +111,15 @@ int host_setup() {
       host->features[n_features++] = &buf_size_features[0];
       host->features[n_features++] = &buf_size_features[1];
       host->features[n_features++] = &buf_size_features[2];
+
+      host->plugin_log.handle = NULL; // Need some data ?
+      host->plugin_log.printf = plugin_log_printf;
+      host->plugin_log.vprintf = plugin_log_vprintf;
+      host->plugin_log_feature.URI = LV2_LOG__log;
+      host->plugin_log_feature.data = &host->plugin_log;
+      host->features[n_features++] = &host->plugin_log_feature;
+
+
       if (lilv_plugin_has_feature(host->lilvPlugin, constants.worker_schedule)) {
          host->work_schedule.handle = host;
          host->work_schedule.schedule_work = my_schedule_work;
@@ -137,6 +167,8 @@ int host_setup() {
       host->options_feature.data = host->options;
       host->features[n_features++] = &host->options_feature;
 
+
+      host->features[n_features] = NULL; // End of feature list
       host->instance = lilv_plugin_instantiate(host->lilvPlugin, config_samplerate, host->features);
 
       host->handle = lilv_instance_get_handle(host->instance);
@@ -170,12 +202,12 @@ void host_ports_discover() {
       if (lilv_port_is_a(plugin, port->lilvPort, constants.atom_AtomPort) &&
           lilv_port_is_a(plugin, port->lilvPort, constants.lv2_InputPort)) {
          port->type = HOST_ATOM_INPUT;
-         port->buffer = calloc(1, ATOM_BUFFER_SIZE);
+         port->buffer = calloc(1, ATOM_PORT_BUFFER_SIZE);
          lilv_instance_connect_port(host->instance, port->index, port->buffer);
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.atom_AtomPort) &&
                  lilv_port_is_a(plugin, port->lilvPort, constants.lv2_OutputPort)) {
          port->type = HOST_ATOM_OUTPUT;
-         port->buffer = calloc(1, ATOM_BUFFER_SIZE);
+         port->buffer = calloc(1, ATOM_PORT_BUFFER_SIZE);
          lilv_instance_connect_port(host->instance, port->index, port->buffer);
 
       } else if (lilv_port_is_a(plugin, port->lilvPort, constants.lv2_ControlPort) &&

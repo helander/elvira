@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
    char lv2_path[100];
    sprintf(lv2_path, "%s/.lv2:/usr/lib/lv2", getenv("HOME"));
    setenv("LV2_PATH", lv2_path, 0);
+   if (getenv("PIPEWIRE_DEBUG") == NULL) setenv("PIPEWIRE_DEBUG", "3", 0);
    printf("\nlv2_path [%s]", getenv("LV2_PATH"));
 
    // Potentially used when creating presets, so create it here in case

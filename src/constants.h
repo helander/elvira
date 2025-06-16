@@ -70,6 +70,10 @@ struct constants {
    LV2_URID atom_Chunk;
    LV2_URID atom_Sequence;
    LV2_URID atom_eventTransfer;
+   LV2_URID log_Error;
+   LV2_URID log_Warning;
+   LV2_URID log_Note;
+   LV2_URID log_Trace;
 };
 
 /* ========================================================================== */

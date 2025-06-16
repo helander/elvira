@@ -51,6 +51,8 @@ extern int on_host_save(struct spa_loop *loop, bool async, uint32_t seq, const v
                         size_t size, void *user_data);
 extern int on_host_worker(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
                           size_t size, void *user_data);
+extern int on_host_control_in(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                          size_t size, void *user_data);
 extern int on_ui_start(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
                        size_t size, void *user_data);
 extern int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
