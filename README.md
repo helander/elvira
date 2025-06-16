@@ -21,7 +21,7 @@ The *tools/build* script along with the CMakeLists.txt should both be rather eas
 The build script will install elvira as /usr/bin/elvira.
 
 In the elwira folder you find a web server program that contains a simple web page to control your elvira program instances. The web server program, called elwira, is a self contained
-single executable file. To build the elwira executable do (you need go development tools installed)
+single executable file. To build the elwira executable, you need go development tools installed and then do:
 ```console
 foo@bar:~$ cd elwira
 foo@bar:~$ go build
@@ -144,7 +144,7 @@ sequenceDiagram
 ```
 This diagram shows the core operation of the elvira program. Assisted by the pipewire infrastructure a realtime thread cyclically calls elvira's on_process handler. The handler
 copies data from pipewire input ports to the plugin's input ports. Then the plugin's run method is called. When run is done, the handler copies data from the plugin's output ports to pipewire
-output ports. This process is then repeated over and over again.
+output ports. This process is then repeated over and over again at regular time intervals.
 
 # Software architecture
 The following diagram exposes a number of different aspects of the elvira software architecture. More detailed information is available in the code itself. A lot of the functionality of the elvira implementation comes from the used components, such as pipewire, lv2, lilv, suil, etc. The functionality of these componenents is documented elsewhere.
