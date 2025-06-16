@@ -7,7 +7,7 @@
  *
  *  Description:
  *      Function prototypes for all event loop handlers.
- *      
+ *
  * ============================================================================
  */
 #include <pipewire/pipewire.h>

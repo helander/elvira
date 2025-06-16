@@ -67,6 +67,26 @@ where <pid> should be replaced with the process id (pid) of the elvira process.
 
 All log entries coming from the plugin instance are tagged with "lv2.plugin", in order to easily be able to extract that specific type of information from the pipewire log.
 
+# Setting control input port values
+Each plugin may have a number of control input ports (these are not exposed as any kind of pipewire port), determined by the plugin. You have the ability
+to assign values to these ports using the following command:
+
+```console
+foo@bar:~$ pw-metadata -- <node id> control.in.<port index> <float value>
+
+```
+
+The "--" allows you to have negative float values.
+
+Example command:
+
+```console
+foo@bar:~$ pw-metadata -- 84 control.in.4 -6.4
+
+```
+
+This will assign the value -6.4 to the control input port with index 4 on the elvira instance with pipewire node id 84.
+
 # Connections ?
 For managing connections (links) between elvira instances and the pipewire infrastructre I use *qpwgraph*, an excellent tool.
 
