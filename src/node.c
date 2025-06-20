@@ -27,13 +27,17 @@
 static Node the_node;
 
 static struct pw_filter_events filter_events = {
-    PW_VERSION_FILTER_EVENTS, .process = on_process, .param_changed = on_param_changed,
-    .command = on_command,    .destroy = on_destroy, .state_changed = on_state_changed,
+    PW_VERSION_FILTER_EVENTS,
+    .process = on_process,
+    .destroy = on_destroy,
+    .state_changed = on_state_changed,
     /*
+        .command = on_command,
         .io_changed=on_io_changed,
         .add_buffer=on_add_buffer,
         .remove_buffer=on_remove_buffer,
         .drained=on_drained,
+        .param_changed = on_param_changed,
     */
 };
 
@@ -77,7 +81,7 @@ static void create_node_ports() {
          case HOST_ATOM_INPUT:
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-                pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit raw UMP", PW_KEY_PORT_NAME,
+                pw_properties_new(PW_KEY_FORMAT_DSP, "8 bit raw midi", PW_KEY_PORT_NAME,
                                   host_port->name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_INPUT;
@@ -85,7 +89,7 @@ static void create_node_ports() {
          case HOST_ATOM_OUTPUT:
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-                pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit raw UMP", PW_KEY_PORT_NAME,
+                pw_properties_new(PW_KEY_FORMAT_DSP, "8 bit raw midi", PW_KEY_PORT_NAME,
                                   host_port->name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_OUTPUT;
@@ -141,7 +145,7 @@ int node_setup() {
    pw_registry_add_listener(node->registry, &registry_listener, &registry_events, node);
 
    struct pw_properties *props;
-   props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, NULL);
+   props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL);
    pw_properties_set(props, "media.name", "");
    pw_properties_set(props, "elvira.role", "instance");
    pw_properties_set(props, "elvira.plugin", config_plugin_uri);

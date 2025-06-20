@@ -36,7 +36,6 @@ extern void on_add_buffer(void *data, void *port_data, struct pw_buffer *buffer)
 extern void on_remove_buffer(void *data, void *port_data, struct pw_buffer *buffer);
 extern void on_process(void *data, struct spa_io_position *position);
 extern void on_drained(void *data);
-extern void on_command(void *data, const struct spa_command *command);
 
 extern void on_registry_global(void *object, uint32_t id, uint32_t permissions, const char *type, uint32_t version,  const struct spa_dict *props);
 extern int on_metadata_property(void *object,                                                                                                                                                      
