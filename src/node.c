@@ -22,8 +22,24 @@
 #include "runtime.h"
 
 /* ========================================================================== */
+/*                               Compilation conditions                       */
+/* ========================================================================== */
+#include <pipewire/version.h>
+#define USE_UMP 0
+#if PW_CHECK_VERSION(1,4,0)
+#undef USE_UMP
+#define USE_UMP 1
+#endif
+
+/* ========================================================================== */
 /*                               Local State                                  */
 /* ========================================================================== */
+#if USE_UMP
+static const char *midi_input_format = "32 bit raw UMP";
+#else
+static const char *midi_input_format = "8 bit raw midi";
+#endif
+
 static Node the_node;
 
 static struct pw_filter_events filter_events = {
@@ -81,7 +97,7 @@ static void create_node_ports() {
          case HOST_ATOM_INPUT:
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-                pw_properties_new(PW_KEY_FORMAT_DSP, "8 bit raw midi", PW_KEY_PORT_NAME,
+                pw_properties_new(PW_KEY_FORMAT_DSP, midi_input_format, PW_KEY_PORT_NAME,
                                   host_port->name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_INPUT;

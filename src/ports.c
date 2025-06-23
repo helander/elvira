@@ -26,6 +26,20 @@
 #include "types.h"
 
 /* ========================================================================== */
+/*                               Compilation conditions                       */
+/* ========================================================================== */
+#include <pipewire/version.h>
+#define USE_UMP 0
+#if PW_CHECK_VERSION(1,4,0)
+#undef USE_UMP
+#define USE_UMP 1
+#endif
+
+#if USE_UMP
+#include <spa/control/ump-utils.h>
+#endif
+
+/* ========================================================================== */
 /*                               Local State                                  */
 /* ========================================================================== */
 static float dummyAudioInput[20000];
@@ -170,9 +184,24 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
       if (spa_pod_is_sequence(pod)) {
          int buf_offset = 0;
          SPA_POD_SEQUENCE_FOREACH((struct spa_pod_sequence *)pod, c) {
-            if (c->type != SPA_CONTROL_Midi) continue;
+#if USE_UMP
+            if (c->type != SPA_CONTROL_UMP) {
+               pw_log_error("Unhandled type %d [ump = %d]", c->type, SPA_CONTROL_UMP);
+               continue;
+            }
+            uint8_t *ump_data = SPA_POD_BODY(&c->value);
+            size_t ump_size = SPA_POD_BODY_SIZE(&c->value);
+            uint8_t midi_data[8];
+            int midi_size =
+                spa_ump_to_midi((uint32_t *)ump_data, ump_size, midi_data, sizeof(midi_data));
+#else
+            if (c->type != SPA_CONTROL_Midi) {
+               pw_log_error("Unhandled type %d [midi = %d]", c->type, SPA_CONTROL_Midi);
+               continue;
+            }
             uint8_t *midi_data = SPA_POD_BODY(&c->value);
             size_t midi_size = SPA_POD_BODY_SIZE(&c->value);
+#endif
             if (midi_data[0] == 0xf8) continue;
             if (ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >= sizeof(LV2_Atom_Event) + midi_size) {
                LV2_Atom_Event *aev =
