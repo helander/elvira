@@ -23,10 +23,16 @@ done
 
 name=${params["name"]}
 uri=${params["uri"]}
+showui=${params["showui"]}
+
+optshowui=""
+if [ "$showui" == "true" ];then
+  optshowui="--showui"
+fi
 
 logfile=/tmp/elvira-${name}.log
 rm -f ${logfile}
-nohup elvira --showui ${name} ${uri} > ${logfile}  &
+nohup elvira $optshowui ${name} ${uri} > ${logfile}  &
 # Remove the logfile once the elvira process terminates
 # the content is until then accessable via "cat /proc/<pid>/fd/1"
 unlink ${logfile}

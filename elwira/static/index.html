@@ -68,8 +68,6 @@
   <!-- ========================================================================================= -->
   <h2>New elvira instance</h2>
   <select id="plugin-select"></select><br>
-  <!--input id="instance-name"/>
-  <button onclick="create_instance()">Create</button-->
   <!-- ========================================================================================= -->
   <!-- elvira instances -->
   <!-- ========================================================================================= -->
@@ -102,6 +100,8 @@
   <!-- ========================================================================================= -->
   <div id="new-instance-popup">
     <input type="text" id="new-instance-name" placeholder="Instance name" />
+    <input type="checkbox" id="new-instance-showui" checked />
+    <label for="new-instance-showui">UI</label>
     <button onclick="submit_new_instance()">Create</button>
     <button onclick="cancel_new_instance()">Cancel</button>
   </div>

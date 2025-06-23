@@ -19,11 +19,13 @@ function sleep(time) {
 function create_instance() {
     const plugin_uri = document.querySelector('#plugin-select');
     const instance_name = document.querySelector('#new-instance-name');
+    const instance_showui = document.querySelector('#new-instance-showui');
     {
         const baseUrl = "/cgi-bin/create_instance.sh";
         const params = new URLSearchParams({
             name: instance_name.value,
-            uri: plugin_uri.value
+            uri: plugin_uri.value,
+            showui: instance_showui.checked
         });
         fetch(`${baseUrl}?${params.toString()}`)
             .then(response => {
