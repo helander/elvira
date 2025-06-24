@@ -1,5 +1,5 @@
 // =====================================================================================================
-// File:           main.go
+// File:           elwira.go
 // Project:        elvira
 // Author:         Lars-Erik Helander <lehswel@gmail.com>
 // License:        MIT
@@ -20,6 +20,8 @@ import (
 	"os/signal"
 	"syscall"
 	"context"
+
+        "elwira/lilv"
 )
 
 // =====================================================================================================
@@ -66,10 +68,35 @@ func extractCGIScripts() error {
 	return nil
 }
 
+func pluginsHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+    lilv.Plugins(w)
+}
+
+func presetsHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    uriParam := r.URL.Query().Get("uri")
+    if uriParam == "" {
+        http.Error(w, "Missing 'uri' parameter", http.StatusBadRequest)
+        return
+    }
+
+    lilv.Presets(w,uriParam)
+}
+
 // =====================================================================================================
 // Main
 // =====================================================================================================
 func main() {
+        //lilv.Y("http://drobilla.net/plugins/mda/DX10")
+        //lilv.X()
 	if err := extractCGIScripts(); err != nil {
 		log.Fatal("Error extracting CGI-script:", err)
 	}
@@ -84,6 +111,11 @@ func main() {
 	// Embedded static files
 	staticFS, _ := fs.Sub(embeddedFiles, "static")
 	http.Handle("/", http.FileServer(http.FS(staticFS)))
+
+        // lilv services
+        http.HandleFunc("/plugins", pluginsHandler)
+        http.HandleFunc("/presets", presetsHandler)
+
 
 	// CGI-handler
 	http.Handle("/cgi-bin/", http.StripPrefix("/cgi-bin/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,3 +160,4 @@ func main() {
 	server.Shutdown(context.Background())
 
 }
+

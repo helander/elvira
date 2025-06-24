@@ -66,7 +66,7 @@ function populate_instance_list() {
           `;
                 const node_id = item.id;
                 tableBody.appendChild(row);
-                    const baseUrl = "/cgi-bin/plugin_presets.sh";
+                    const baseUrl = "/presets";
                     const params = new URLSearchParams({
                         uri: item.plugin
                     });
@@ -82,13 +82,14 @@ function populate_instance_list() {
                             const empty = document.createElement('option');
                             empty.innerHTML = "";
                             presetSelect.appendChild(empty);
-                            data.forEach(item => {
+                            data.forEach(x => {
                                 const opt = document.createElement('option');
-                                opt.innerHTML = `${item}`;
+                                opt.value = x.uri;
+                                opt.text = x.label;
                                 presetSelect.appendChild(opt);
                             });
                             for (let i = 0; i < presetSelect.options.length; i++) {
-                                if (presetSelect.options[i].text === item.preset) {
+                                if (presetSelect.options[i].value === item.preset) {
                                     presetSelect.selectedIndex = i;
                                     break;
                                 }
@@ -109,7 +110,8 @@ function populate_instance_list() {
             tableBody.innerHTML = `<tr><td colspan="3">Failed to load data</td></tr>`;
         });
 
-        const baseUrl = "/cgi-bin/lv2ls.sh";
+        //const baseUrl = "/cgi-bin/lv2ls.sh";
+        const baseUrl = "/plugins";
         fetch(baseUrl)
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');

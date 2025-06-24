@@ -40,15 +40,12 @@ foo@bar:~$ ./elwira/elwira
 
 ```
 The elwira program prints the url of the elvira control page, so just open your browser on this url. 
-The elwira program interacts with the pipewire and lv2 tools on your system. The following CLI programs needs to be available:
-* lv2ls
-* lv2info
+The elwira program interacts with the pipewire tools on your system. The following CLI programs needs to be available:
 * pw-cli
 * pw-dump
 * pw-metadata
 
-In order to use elvira, pipewire must be installed on your system and then you will most likely have the required pw-* programs. The
-lv2 programs are typically found in a package named lilv-utils or similar.
+In order to use elvira, pipewire must be installed on your system and then you will most likely have the required pw-* programs.
 
 # Logs
 The elvira lv2 host provides the logging feature to its plugin. Any logging performed by the plugin is sent to the pipewire log for the elvira program. By default, the log of a pipewire client
