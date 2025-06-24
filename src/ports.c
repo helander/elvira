@@ -332,7 +332,7 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
    Port *port = find_port(port_index);
    if (protocol == 0U) {
       const float value = *(const float *)buffer;
-      pw_log_debug("Write to control port %d value %f", port_index, value);
+      pw_log_info("Write to control port %d value %f", port_index, value);
       HostPort *host_port = find_host_port(port_index);
       if (host_port == NULL) {
          pw_log_error("No host port found for index %d", port_index);

@@ -17,6 +17,7 @@
 
 #include "constants.h"
 #include "handler.h"
+#include "ports.h"
 #include "host.h"
 #include "node.h"
 #include "runtime.h"
@@ -43,6 +44,30 @@ const char* get_preset_tail(const char* url) {
     return ""; // Doesn't match "preset/" rule
 }
 
+static void
+set_port_value(const char* port_symbol,
+               void*       user_data,
+               const void* value,
+               uint32_t    size,
+               uint32_t    type)
+{
+    if (type != constants.atom_Float || size != sizeof(float)) {
+        pw_log_error("Unsupported value format (type=%u, size=%u)\n", type, size);
+        return;
+    }
+
+    LilvNode *sym = lilv_new_string(constants.world, port_symbol);
+    const LilvPort* port = lilv_plugin_get_port_by_symbol(host->lilvPlugin, sym);
+    lilv_node_free(sym);
+    if (!port) {
+        pw_log_error("Unknown port symbol: %s\n", port_symbol);
+        return;
+    }
+
+    uint32_t index = lilv_port_get_index(host->lilvPlugin,port);
+    ports_write(NULL, index, sizeof(float), 0, value);
+}
+
 static void apply_preset(char *preset_uri) {
    if (strlen(preset_uri)) {
       host->lilv_preset = lilv_new_uri(constants.world, preset_uri);
@@ -58,7 +83,7 @@ static void apply_preset(char *preset_uri) {
             };
             const LV2_Feature *features[] = {&urid_feature, NULL};
 
-            lilv_state_restore(state, host->instance, NULL, NULL, 0, features);
+            lilv_state_restore(state, host->instance, set_port_value, NULL, 0, features);
             pw_log_info("Preset with URI: %s applied", preset_uri);
 
             pw_thread_loop_lock(runtime_primary_event_loop);
