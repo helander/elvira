@@ -43,6 +43,16 @@ function create_instance() {
 }
 
 // =========================================================================================
+// Open control
+// =========================================================================================
+function openControl(node) {
+    const url = "/control-inputs.html?node="+node;
+    const windowName = "control"+node;
+    win = window.open(url, windowName);
+}
+
+
+// =========================================================================================
 // Populate instance list
 // =========================================================================================
 function populate_instance_list() {
@@ -63,7 +73,7 @@ function populate_instance_list() {
             <td id="preset-${item.id}"></td>
             <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
             <td><button onclick="delete_instance(${item.id})">Delete</button></td>
-            <td><a href="/control-inputs.html?node=${item.id}">Controls</a></td>
+            <td><a href="#" onclick="openControl(${item.id})">Controls</a></td>
           `;
                 const node_id = item.id;
                 tableBody.appendChild(row);
