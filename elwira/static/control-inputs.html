@@ -1,0 +1,196 @@
+<!--
+   File:           control-inputs.html
+   Project:        elvira
+   Author:         Lars-Erik Helander <lehswel@gmail.com>
+   License:        MIT
+   Description:    Simple control page for host control input ports
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <!-- ========================================================================================= -->
+  <!-- Page header -->
+  <!-- ========================================================================================= -->
+<head>
+  <meta charset="UTF-8">
+  <title>controls</title>
+  <!-- ========================================================================================= -->
+  <!-- Style -->
+  <!-- ========================================================================================= -->
+  <style>
+:root {
+  --slider-gap: 30px;
+  --value-offset: 10px;
+  --name-offset: 10px;
+  --value-font-size: 16px;
+  --name-font-size: 14px;
+  --slider-width: 150px; /* length after rotation */
+  --slider-height: 16px;  /* thickness after rotation */
+}
+
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+
+.slider-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--slider-gap);
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-wrapper {
+  position: relative;
+  width: 60px;
+  height: 200px;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.slider-value {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--value-font-size);
+  text-align: center;
+}
+
+.slider-name {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--name-font-size);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.slider-wrapper input[type="range"] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  width: var(--slider-width);  /* becomes height after rotation */
+  height: var(--slider-height); /* becomes width after rotation */
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  border-radius: 8px;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+/* Thumb styling for iPad Safari */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #333;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  cursor: pointer;
+  margin-top: -4px; /* aligns thumb better after rotation */
+}
+
+/* Firefox thumb */
+input[type="range"]::-moz-range-thumb {
+  background: #333;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+  </style>
+</head>
+  <!-- ========================================================================================= -->
+  <!-- Page body -->
+  <!-- ========================================================================================= -->
+<body>
+  <!--h2 style="text-align:center;">Mixer Sliders</h2-->
+  <h3 id="node-name"></h3>
+  <h4 id="plugin-uri"></h4>
+  <h4 id="plugin-name"></h4>
+  <!-- ========================================================================================= -->
+  <!-- Sliders -->
+  <!-- ========================================================================================= -->
+  <div class="slider-container" id="sliders"></div>
+
+  <!-- ========================================================================================= -->
+  <!-- Script -->
+  <!-- ========================================================================================= -->
+  <script type="module">
+    const params = new URLSearchParams(window.location.search);
+    const nodeValue = params.get('node');
+
+    const plugin_uri = document.querySelector('#plugin-uri');
+    const plugin_name = document.querySelector('#plugin-name');
+    const node_name = document.querySelector('#node-name');
+
+    const baseUrl = "/pw-node-props/"+nodeValue+"?prefix=elvira.host.info.&prefix=node.name&prefix=elvira.control.in.";
+    
+    const response = await fetch(baseUrl);
+    const data = await response.json();
+
+               console.log('id',data.id);
+               console.log('base',data.properties["elvira.host.info.base"]);
+               plugin_uri.innerHTML = data.properties["elvira.host.info.base"].uri;
+               plugin_name.innerHTML = data.properties["elvira.host.info.base"].name;
+               node_name.innerHTML = data.properties["node.name"];
+               const ports = data.properties["elvira.host.info.ports"];
+               console.log('ports',ports);
+               const container = document.getElementById('sliders');
+
+               for (let i = 0; i < ports.length; i++) {
+                  const port = ports[i];
+                  console.log('port '+i,port);
+                  if (!port.input) continue;
+                  if (!port.control) continue;
+
+                  const wrapper = document.createElement('div');
+                  wrapper.className = 'slider-wrapper';
+
+
+                  const current = data.properties["elvira.control.in."+i];
+                  const input = document.createElement('input');
+                  input.type = 'range';
+                  input.min = Number(port.min);
+                  input.max = Number(port.max);
+                  input.step = (input.max - input.min)*0.01;
+                  if (current != null) {
+                    input.value = Number(current);
+                  } else {
+                    input.value = Number(port.default);
+                  }
+                  console.log('input values',input.min,input.max,input.value);
+                  console.log('port values',port.min,port.max,port.default);
+
+                  const valueDisplay = document.createElement('div');
+                  valueDisplay.className = 'slider-value';
+                  valueDisplay.innerText = input.value;
+
+                  input.addEventListener('input', () => {
+                     valueDisplay.innerText = input.value;
+                     const baseUrl = "/pw-metadata/"+nodeValue+"?key=control.in."+i+"&value="+input.value;
+                     console.log(baseUrl);
+                     fetch(baseUrl);
+                  });
+
+                  const nameLabel = document.createElement('div');
+                  nameLabel.className = 'slider-name';
+                  nameLabel.innerText = port.name;
+
+                  wrapper.appendChild(valueDisplay);
+                  wrapper.appendChild(input);
+                  wrapper.appendChild(nameLabel);
+                  container.appendChild(wrapper);
+
+               }
+
+
+  </script>
+</body>
+</html>
