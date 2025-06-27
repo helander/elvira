@@ -344,6 +344,14 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
       }
       host_port->current = value;
       pw_log_debug("Written to control port %d value %f", port_index, host_port->current);
+
+      struct spa_dict_item items[1];
+      char prop_name[100];
+      sprintf(prop_name,"elvira.control.in.%d",port_index);
+      char prop_value[20];
+      sprintf(prop_value,"%f",value);
+      items[0] = SPA_DICT_ITEM_INIT(prop_name, prop_value);
+      pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
    } else if (protocol == constants.atom_eventTransfer) {
       const LV2_Atom *const atom = (const LV2_Atom *)buffer;
       if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
