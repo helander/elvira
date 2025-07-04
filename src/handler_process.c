@@ -93,6 +93,6 @@ void on_process(void *userdata, struct spa_io_position *position) {
    if (host->iface && host->iface->end_run) host->iface->end_run(host->handle);
 
    SET_FOR_EACH(Port *, port, &ports) {
-      if (port->post_run) port->post_run(port);
+      if (port->post_run) port->post_run(port, (uint64_t)n_samples);
    }
 }

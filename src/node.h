@@ -34,6 +34,8 @@ struct Node {
    struct pw_filter *filter;
    int64_t clock_time;
    Set ports;
+   float gain; 
+   float previous_gain;
 };
 
 typedef enum {

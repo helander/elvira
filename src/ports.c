@@ -96,18 +96,27 @@ void pre_run_audio_input(Port *port, uint64_t frame, float denom, uint64_t n_sam
    }
 }
 
-void post_run_audio_input(Port *port) {}
+void post_run_audio_input(Port *port, uint64_t n_samples) {}
 
 void pre_run_audio_output(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
-   float *outp = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
-   if (outp == NULL) {
-      lilv_instance_connect_port(host->instance, port->host_port->index, dummyAudioOutput);
-   } else {
-      lilv_instance_connect_port(host->instance, port->host_port->index, outp);
-   }
+   port->samples = pw_filter_get_dsp_buffer(port->node_port->pwPort, n_samples);
+   if (port->samples == NULL) port->samples = dummyAudioOutput;
+   lilv_instance_connect_port(host->instance, port->host_port->index, port->samples);
 }
 
-void post_run_audio_output(Port *port) {}
+void post_run_audio_output(Port *port, uint64_t n_samples) {
+
+  float target_gain = node->gain;
+  float current_gain = node->previous_gain;
+  float delta_gain = (target_gain - current_gain)/(50*n_samples); // Empirically found divisor (minimum popping and minimum settle time)
+  float interpolated_gain = current_gain;
+  for (uint64_t i = 0; i < n_samples; i++) {
+    port->samples[i] *= interpolated_gain;
+    interpolated_gain += delta_gain;
+  }
+  node->previous_gain = interpolated_gain;
+  port->samples = NULL;
+}
 
 void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
@@ -226,7 +235,7 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
    }
 }
 
-void post_run_control_input(Port *port) {
+void post_run_control_input(Port *port, uint64_t n_samples) {
    if (port->node_port->pwbuffer)
       pw_filter_queue_buffer(port->node_port->pwPort, port->node_port->pwbuffer);
 }
@@ -238,7 +247,7 @@ void pre_run_control_output(Port *port, uint64_t frame, float denom, uint64_t n_
    port->node_port->pwbuffer = pw_filter_dequeue_buffer(port->node_port->pwPort);
 }
 
-void post_run_control_output(Port *port) {
+void post_run_control_output(Port *port, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
    send_atom_sequence(port->host_port->index, aseq);
    LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));

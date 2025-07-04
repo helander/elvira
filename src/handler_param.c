@@ -7,11 +7,14 @@
  *
  *  Description:
  *      Event loop handler for pipewire params.
- *      
+ *
  * ============================================================================
  */
 
+#include <spa/pod/parser.h>
+#include <spa/param/props.h>
 #include "handler.h"
+#include "node.h"
 
 /* ========================================================================== */
 /*                               Local State                                  */
@@ -29,7 +32,10 @@
 /*                             Public Functions                               */
 /* ========================================================================== */
 void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa_pod *param) {
-   printf("\nParam changed type %d  size %d", param->type, param->size);
-   if (param->type == SPA_TYPE_Object) printf("\nobject");
-   fflush(stdout);
+   Node *n = (Node *) data;
+    if (id == SPA_PARAM_Props && param) {
+        spa_pod_parse_object(param,
+            SPA_TYPE_OBJECT_Props, NULL,
+            SPA_PROP_volume, SPA_POD_OPT_Float(&n->gain));
+    }
 }

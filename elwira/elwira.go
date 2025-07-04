@@ -96,6 +96,29 @@ func presetsHandler(w http.ResponseWriter, r *http.Request) {
     lilv.Presets(w,uriParam)
 }
 
+func handlePipewireVolume(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/pw-volume/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "missing node ID", 400)
+		return
+	}
+
+	nodeID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.Error(w, "invalid node ID", 400)
+		return
+	}
+
+	gain := r.URL.Query()["gain"][0]
+
+	cmd := exec.Command("pw-cli","--","set-param",fmt.Sprintf("%d",nodeID),"Props",fmt.Sprintf("{volume=%s}", gain))
+	_, err = cmd.Output()
+	if err != nil {
+		http.Error(w, "failed to run pw-volume", 500)
+		return
+	}
+}
+
 func handlePipewireMetadata(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/pw-metadata/"), "/")
 	if len(parts) == 0 || parts[0] == "" {
@@ -265,6 +288,7 @@ func main() {
         http.HandleFunc("/presets", presetsHandler)
 	http.HandleFunc("/pw-node-props/", handlePipewireNodeProps) 
 	http.HandleFunc("/pw-metadata/", handlePipewireMetadata) 
+	http.HandleFunc("/pw-volume/", handlePipewireVolume) 
 
 	// CGI-handler
 	http.Handle("/cgi-bin/", http.StripPrefix("/cgi-bin/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

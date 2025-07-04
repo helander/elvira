@@ -74,9 +74,23 @@ function populate_instance_list() {
             <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
             <td><button onclick="delete_instance(${item.id})">Delete</button></td>
             <td><a href="#" onclick="openControl(${item.id})">Controls</a></td>
+            <td><input type="range" step="0.01" id="volume-${item.id}"></a></td>
           `;
                 const node_id = item.id;
                 tableBody.appendChild(row);
+                  const volume = document.querySelector(`#volume-${item.id}`);
+                  volume.addEventListener('input', () => {
+                     console.log('volval',volume.value);
+                     const minDb = -50; 
+                     const maxDb = 0;
+                     const percent = Number(volume.value) / 100;
+                     const db = minDb + (maxDb - minDb) * percent;
+                     const gain = Math.pow(10, db / 20); 
+                     const baseUrl = "/pw-volume/"+node_id+"?gain="+gain;
+                     console.log(baseUrl);
+                     fetch(baseUrl);
+                  })
+
                     const baseUrl = "/presets";
                     const params = new URLSearchParams({
                         uri: item.plugin

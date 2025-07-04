@@ -14,6 +14,7 @@
 #include "node.h"
 
 #include <spa/param/latency-utils.h>
+#include <spa/param/props.h>
 #include <spa/pod/builder.h>
 #include <stdio.h>
 
@@ -47,13 +48,13 @@ static struct pw_filter_events filter_events = {
     .process = on_process,
     .destroy = on_destroy,
     .state_changed = on_state_changed,
+    .param_changed = on_param_changed,
     /*
         .command = on_command,
         .io_changed=on_io_changed,
         .add_buffer=on_add_buffer,
         .remove_buffer=on_remove_buffer,
         .drained=on_drained,
-        .param_changed = on_param_changed,
     */
 };
 
@@ -168,12 +169,23 @@ int node_setup() {
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());
    pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
+   pw_properties_set(props, "elvira.autoconnect.audio", "true");
+   pw_properties_set(props, "elvira.autoconnect.midi", "true");
 
    node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
                                        config_nodename, props, &filter_events, node);
 
-   uint8_t buffer[1024];
-   struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+    uint8_t buffer[1024];
+    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+    node->gain = 1.0;
+    node->previous_gain = node->gain;
+    const struct spa_pod *volprops = spa_pod_builder_add_object(&b,
+        SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
+        SPA_PROP_volume, SPA_POD_Float(node->gain));
+    pw_filter_update_params(node->filter, NULL, &volprops, 1);
+
+
+   b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
    const struct spa_pod *params[1];
 
    params[0] = spa_process_latency_build(
@@ -190,3 +202,5 @@ int node_setup() {
    // All pw resources created, release the lock
    pw_thread_loop_unlock(runtime_primary_event_loop);
 }
+
+

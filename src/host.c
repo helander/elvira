@@ -104,7 +104,7 @@ int host_setup() {
       static const int32_t seq_size = ATOM_PORT_BUFFER_SIZE;
       float fsample_rate = (float)config_samplerate;
 
-      host->block_length = 1024;
+      host->block_length = 4096;
       host->features[n_features++] = &constants.map_feature;
       host->features[n_features++] = &constants.unmap_feature;
 
