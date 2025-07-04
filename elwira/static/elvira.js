@@ -65,6 +65,8 @@ function populate_instance_list() {
             const tableBody = document.querySelector('#instance-table tbody');
             tableBody.innerHTML = '';
             data.forEach(item => {
+                if (item.gain == null) item.gain = 0;
+                console.log('gain',item.gain);
                 const row = document.createElement('tr');
                 row.innerHTML = `
             <td>${item.id}</td>
@@ -77,12 +79,15 @@ function populate_instance_list() {
             <td><input type="range" step="0.01" id="volume-${item.id}"></a></td>
           `;
                 const node_id = item.id;
+                const minDb = -50;
+                const maxDb = 0;
+                const volval = (20*Math.log10(Number(item.gain)) - minDb)*100.0/(maxDb - minDb)
+
                 tableBody.appendChild(row);
                   const volume = document.querySelector(`#volume-${item.id}`);
+                  volume.value = volval;
                   volume.addEventListener('input', () => {
                      console.log('volval',volume.value);
-                     const minDb = -50; 
-                     const maxDb = 0;
                      const percent = Number(volume.value) / 100;
                      const db = minDb + (maxDb - minDb) * percent;
                      const gain = Math.pow(10, db / 20); 
@@ -90,6 +95,7 @@ function populate_instance_list() {
                      console.log(baseUrl);
                      fetch(baseUrl);
                   })
+
 
                     const baseUrl = "/presets";
                     const params = new URLSearchParams({

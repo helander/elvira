@@ -38,4 +38,9 @@ void on_param_changed(void *data, void *port_data, uint32_t id, const struct spa
             SPA_TYPE_OBJECT_Props, NULL,
             SPA_PROP_volume, SPA_POD_OPT_Float(&n->gain));
     }
+      struct spa_dict_item items[1];
+      char sgain[20];
+      sprintf(sgain,"%f",n->gain);
+      items[0] = SPA_DICT_ITEM_INIT("elvira.gain", sgain);
+      pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
 }

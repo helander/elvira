@@ -161,6 +161,12 @@ int node_setup() {
    node->registry = pw_core_get_registry(core, PW_VERSION_REGISTRY, 0);
    pw_registry_add_listener(node->registry, &registry_listener, &registry_events, node);
 
+   node->gain = 1.0;
+   node->previous_gain = node->gain;
+
+   char sgain[20];
+   sprintf(sgain,"%f",node->gain);
+
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL);
    pw_properties_set(props, "media.name", "");
@@ -169,16 +175,16 @@ int node_setup() {
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());
    pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
-   pw_properties_set(props, "elvira.autoconnect.audio", "true");
-   pw_properties_set(props, "elvira.autoconnect.midi", "true");
+   //pw_properties_set(props, "elvira.autoconnect.audio", "true");
+   //pw_properties_set(props, "elvira.autoconnect.midi", "true");
+   pw_properties_set(props, "elvira.gain", sgain);
+
 
    node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
                                        config_nodename, props, &filter_events, node);
 
     uint8_t buffer[1024];
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-    node->gain = 1.0;
-    node->previous_gain = node->gain;
     const struct spa_pod *volprops = spa_pod_builder_add_object(&b,
         SPA_TYPE_OBJECT_Props, SPA_PARAM_Props,
         SPA_PROP_volume, SPA_POD_Float(node->gain));
