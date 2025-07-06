@@ -17,6 +17,7 @@
 #include <spa/param/props.h>
 #include <spa/pod/builder.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "handler.h"
 #include "host.h"
@@ -167,6 +168,9 @@ int node_setup() {
    char sgain[20];
    sprintf(sgain,"%f",node->gain);
 
+   char spid[20];
+   sprintf(spid,"%d",getpid());
+
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL);
    pw_properties_set(props, "media.name", "");
@@ -178,6 +182,7 @@ int node_setup() {
    //pw_properties_set(props, "elvira.autoconnect.audio", "true");
    //pw_properties_set(props, "elvira.autoconnect.midi", "true");
    pw_properties_set(props, "elvira.gain", sgain);
+   pw_properties_set(props, "elvira.pid", spid);
 
 
    node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
