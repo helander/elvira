@@ -26,7 +26,7 @@
 /* ========================================================================== */
 /*                               Public Macros                                */
 /* ========================================================================== */
-#define ATOM_PORT_BUFFER_SIZE 4 * 1024
+#define ATOM_PORT_BUFFER_SIZE 4104 /* 4k + atom sequence overhead */
 #define WORK_RESPONSE_RINGBUFFER_SIZE 1024 /* should be power of 2 */
 #define MAX_WORK_RESPONSE_MESSAGE_SIZE 128
 
