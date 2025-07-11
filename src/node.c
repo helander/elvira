@@ -66,10 +66,20 @@ static const struct pw_registry_events registry_events = {
     .global = on_registry_global,
 };
 
+static const char *audio_in_0 = "in.FL";
+static const char *audio_in_1 = "in.FR";
+static const char *audio_out_0 = "out.FL";
+static const char *audio_out_1 = "out.FR";
+//static const char *audio_channel_0 = "FL";
+//static const char *audio_channel_1 = "FR";
 /* ========================================================================== */
 /*                              Local Functions                               */
 /* ========================================================================== */
 static void create_node_ports() {
+   int audio_input_index = 0;
+   int audio_output_index = 0;
+   const char *port_name;
+   //const char *audio_channel;
    set_init(&node->ports);
    HostPort *host_port;
    SET_FOR_EACH(HostPort *, host_port, &host->ports) {
@@ -113,20 +123,48 @@ static void create_node_ports() {
             node_port->type = NODE_CONTROL_OUTPUT;
             break;
          case HOST_AUDIO_INPUT:
+            switch (audio_input_index) {
+               case 0:
+                   port_name = audio_in_0;
+                   //audio_channel = audio_channel_0;
+                   break;
+               case 1:
+                   port_name = audio_in_1;
+                   //audio_channel = audio_channel_1;
+                   break;
+               default:
+                   port_name = host_port->name;
+                   //audio_channel = "";
+            }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio", PW_KEY_PORT_NAME,
-                                  host_port->name, NULL),
+                                  port_name, /*"audio.channel", audio_channel,*/ NULL),
                 NULL, 0);
             node_port->type = NODE_AUDIO_INPUT;
+            audio_input_index++;
             break;
          case HOST_AUDIO_OUTPUT:
+            switch (audio_output_index) {
+               case 0:
+                   port_name = audio_out_0;
+                   //audio_channel = audio_channel_0;
+                   break;
+               case 1:
+                   port_name = audio_out_1;
+                   //audio_channel = audio_channel_1;
+                   break;
+               default:
+                   port_name = host_port->name;
+                   //audio_channel = "";
+            }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio", PW_KEY_PORT_NAME,
-                                  host_port->name, NULL),
+                                  port_name, /*"audio.channel", audio_channel,*/ NULL),
                 NULL, 0);
             node_port->type = NODE_AUDIO_OUTPUT;
+            audio_output_index++;
             break;
          default:
             pw_log_error("Unknown host port type %d", host_port->type);
@@ -173,12 +211,20 @@ int node_setup() {
 
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL);
+   //pw_properties_set(props, "media.class", "Audio/Filter");
    pw_properties_set(props, "media.name", "");
+   //pw_properties_set(props, "audio.channels", "2");
+   //pw_properties_set(props, "audio.position", "FL,FR");
    pw_properties_set(props, "elvira.role", "instance");
+   if (config_group)
+      pw_properties_set(props, "elvira.group", config_group);
+   if (config_step)
+      pw_properties_set(props, "elvira.step", config_step);
    pw_properties_set(props, "elvira.plugin", config_plugin_uri);
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());
    pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
+   pw_properties_set(props, "elvira.host.info.params", host_info_params());
    //pw_properties_set(props, "elvira.autoconnect.audio", "true");
    //pw_properties_set(props, "elvira.autoconnect.midi", "true");
    pw_properties_set(props, "elvira.gain", sgain);

@@ -22,7 +22,7 @@
   --value-offset: 10px;
   --name-offset: 10px;
   --value-font-size: 16px;
-  --name-font-size: 14px;
+  --name-font-size: 10px;
   --slider-width: 150px; /* length after rotation */
   --slider-height: 16px;  /* thickness after rotation */
 }
@@ -130,7 +130,7 @@ input[type="range"]::-moz-range-thumb {
     const plugin_name = document.querySelector('#plugin-name');
     const node_name = document.querySelector('#node-name');
 
-    const baseUrl = "/pw-node-props/"+nodeValue+"?prefix=elvira.host.info.&prefix=node.name&prefix=elvira.control.in.";
+    const baseUrl = "/node-props/"+nodeValue+"?prefix=elvira.host.info.&prefix=node.name&prefix=elvira.control.in.";
     
     const response = await fetch(baseUrl);
     const data = await response.json();
@@ -174,7 +174,7 @@ input[type="range"]::-moz-range-thumb {
 
                   input.addEventListener('input', () => {
                      valueDisplay.innerText = input.value;
-                     const baseUrl = "/pw-metadata/"+nodeValue+"?key=control.in."+i+"&value="+input.value;
+                     const baseUrl = "/metadata/"+nodeValue+"?key=control.in."+i+"&value="+input.value;
                      console.log(baseUrl);
                      fetch(baseUrl);
                   });

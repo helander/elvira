@@ -1,0 +1,29 @@
+.hidden {
+    display: none;
+}
+
+#file-modal {
+    position: fixed;
+    top: 10%;
+    left: 20%;
+    width: 60%;
+    height: 70%;
+    background: white;
+    border: 2px solid black;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.modal-content {
+    padding: 20px;
+}
+
+#file-list li {
+    cursor: pointer;
+    padding: 4px;
+}
+
+#file-list li:hover {
+    background-color: #efefef;
+}

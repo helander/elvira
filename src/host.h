@@ -92,3 +92,4 @@ extern int host_setup();
 extern void host_ports_discover();
 extern char *host_info_base();
 extern char *host_info_ports();
+extern char *host_info_params();

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plugin parameters</title>
+    <link rel="stylesheet" href="/browsefs.css">
+</head>
+<body>
+    <h1>Parameters</h1>
+  <h3 id="node-name"></h3>
+  <h4 id="plugin-uri"></h4>
+  <h4 id="plugin-name"></h4>
+    <table id="parameters">
+        <!-- Inputs dynamically inserted here -->
+    </table>
+
+    <!-- File Selector Modal -->
+    <div id="file-modal" class="hidden">
+        <div class="modal-content">
+            <button onclick="closeModal()">Cancel</button>
+            <h3 id="current-path">/</h3>
+            <ul id="file-list"></ul>
+        </div>
+    </div>
+
+    <script src="/browsefs.js"></script>
+    <script>
+/*
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("parameters");
+
+    const fields = [
+        { label: "Username", path: false },
+        { label: "Log File", path: true },
+        { label: "Output Folder", path: true }
+    ];
+
+    fields.forEach((field, idx) => {
+        const div = document.createElement("div");
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = `input-${idx}`;
+
+        div.appendChild(document.createTextNode(field.label + ": "));
+        div.appendChild(input);
+
+        if (field.path) {
+            const button = document.createElement("button");
+            button.textContent = "Browse...";
+            button.onclick = () => openModal(input);
+            div.appendChild(button);
+        }
+
+        form.appendChild(div);
+    });
+});
+*/
+
+    </script>
+  <!-- ========================================================================================= -->
+  <!-- Script -->
+  <!-- ========================================================================================= -->
+  <script type="module">
+
+    const qparams = new URLSearchParams(window.location.search);
+    const nodeValue = qparams.get('node');
+
+    const plugin_uri = document.querySelector('#plugin-uri');
+    const plugin_name = document.querySelector('#plugin-name');
+    const node_name = document.querySelector('#node-name');
+
+    const baseUrl = "/node-props/"+nodeValue+"?prefix=elvira.host.info&prefix=node.name";
+    
+    const response = await fetch(baseUrl);
+    const data = await response.json();
+
+               console.log('id',data.id);
+               console.log('base',data.properties["elvira.host.info.base"]);
+               plugin_uri.innerHTML = data.properties["elvira.host.info.base"].uri;
+               plugin_name.innerHTML = data.properties["elvira.host.info.base"].name;
+               node_name.innerHTML = data.properties["node.name"];
+               const params = data.properties["elvira.host.info.params"];
+               console.log('params',params);
+               const container = document.getElementById('parameters');
+
+               for (let i = 0; i < params.length; i++) {
+                  const param = params[i];
+                  if (param.range == "http://lv2plug.in/ns/ext/atom#Path") {
+                     console.log('param '+i,param);
+                     const row = document.createElement('tr');
+                     const label = document.createElement('td');
+                     const path = document.createElement('td');
+                     const browse = document.createElement('td');
+                     //const uri = document.createElement('td');
+                     //const range = document.createElement('td');
+                     //const xdefault = document.createElement('td');
+                     //const min = document.createElement('td');
+                     //const max = document.createElement('td');
+                     row.appendChild(label);
+                     row.appendChild(path);
+                     row.appendChild(browse);
+                     //row.appendChild(range);
+                     //row.appendChild(xdefault);
+                     //row.appendChild(min);
+                     //row.appendChild(max);
+                     container.appendChild(row);
+                     label.innerHTML = param.label;
+                     //uri.innerHTML = param.uri;
+                     //range.innerHTML = param.range;
+                     //xdefault.innerHTML = param.default;
+                     //min.innerHTML = param.min;
+                     //max.innerHTML = param.max;
+                     const input = document.createElement("input");
+                     input.type = "text";
+                     input.id = `input-${i}`;
+                     input.style.width = '700px';
+                     path.appendChild(input);
+                     const button = document.createElement("button");
+                     button.textContent = "Browse...";
+                     button.onclick = () => openModal(input);
+                     browse.appendChild(button);
+                     input.addEventListener('input', () => {
+                         const pars = {
+                            key: param.uri,
+                            value: input.value
+                         };
+                         const queryString = new URLSearchParams(pars).toString();
+                         const baseUrl = "/metadata/"+nodeValue
+                         const urlWithParams = `${baseUrl}?${queryString}`;
+                         console.log(urlWithParams);
+                         fetch(urlWithParams);
+                     });
+
+                  } else {
+                     continue;
+                     console.log('param '+i,param);
+                     const row = document.createElement('tr');
+                     const label = document.createElement('td');
+                     const uri = document.createElement('td');
+                     const range = document.createElement('td');
+                     const xdefault = document.createElement('td');
+                     const min = document.createElement('td');
+                     const max = document.createElement('td');
+                     row.appendChild(label);
+                     row.appendChild(uri);
+                     row.appendChild(range);
+                     row.appendChild(xdefault);
+                     row.appendChild(min);
+                     row.appendChild(max);
+                     container.appendChild(row);
+                     label.innerHTML = param.label;
+                     uri.innerHTML = param.uri;
+                     range.innerHTML = param.range;
+                     xdefault.innerHTML = param.default;
+                     min.innerHTML = param.min;
+                     max.innerHTML = param.max;
+                  }
+                  /*
+
+                  //const wrapper = document.createElement('div');
+                  //wrapper.className = 'slider-wrapper';
+
+
+                  //const current = data.properties["elvira.control.in."+i];
+                  //const input = document.createElement('input');
+                  //input.type = 'range';
+                  //input.min = Number(port.min);
+                  //input.max = Number(port.max);
+                  //input.step = (input.max - input.min)*0.01;
+                  //if (current != null) {
+                  //  input.value = Number(current);
+                  //} else {
+                  //  input.value = Number(port.default);
+                  //}
+                  //console.log('input values',input.min,input.max,input.value);
+                  //console.log('port values',port.min,port.max,port.default);
+
+                  //const valueDisplay = document.createElement('div');
+                  //valueDisplay.className = 'slider-value';
+                  //valueDisplay.innerText = input.value;
+
+                  //input.addEventListener('input', () => {
+                  //   valueDisplay.innerText = input.value;
+                  //   const baseUrl = "/metadata/"+nodeValue+"?key=control.in."+i+"&value="+input.value;
+                  //   console.log(baseUrl);
+                  //   fetch(baseUrl);
+                  //});
+
+                  //const nameLabel = document.createElement('div');
+                  //nameLabel.className = 'slider-name';
+                  //nameLabel.innerText = port.name;
+
+                  //wrapper.appendChild(valueDisplay);
+                  //wrapper.appendChild(input);
+                  //wrapper.appendChild(nameLabel);
+                  //container.appendChild(wrapper);
+                  */
+               }
+
+
+  </script>
+</body>
+</html>
+
+

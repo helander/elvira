@@ -95,6 +95,16 @@ int main(int argc, char **argv) {
             config_preset_uri = strdup(argv[++i]);
          else
             syntax_error = true;
+      } else if (!strcmp(argv[i], "--group")) {
+         if (i < argc - 1)
+            config_group = strdup(argv[++i]);
+         else
+            syntax_error = true;
+      } else if (!strcmp(argv[i], "--step")) {
+         if (i < argc - 1)
+            config_step = strdup(argv[++i]);
+         else
+            syntax_error = true;
       } else {
          if (pos_arg_cnt == 0) {
             if (i < argc)
@@ -111,9 +121,12 @@ int main(int argc, char **argv) {
    if (pos_arg_cnt < 2 || syntax_error) {
       fprintf(stderr,
               "\nUsage: $ elvira <engine-nam>e <plugin-uri> [--showui] [--latency period] [--samplerate rate] "
-              "[--preset uri]\n");
+              "[--preset uri] [--group groupname] [--step stepnumber]\n");
       exit(-1);
    }
+
+  if (config_step == NULL) config_step = "0";
+  if (config_group == NULL) config_group = config_nodename;
 
    gtk_init(&argc, &argv);
    pw_init(&argc, &argv);

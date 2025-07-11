@@ -21,7 +21,7 @@ function create_instance() {
     const instance_name = document.querySelector('#new-instance-name');
     const instance_showui = document.querySelector('#new-instance-showui');
     {
-        const baseUrl = "/cgi-bin/create_instance.sh";
+        const baseUrl = "/elvira";
         const params = new URLSearchParams({
             name: instance_name.value,
             uri: plugin_uri.value,
@@ -51,12 +51,30 @@ function openControl(node) {
     win = window.open(url, windowName);
 }
 
+// =========================================================================================
+// Open params
+// =========================================================================================
+function openParams(node) {
+    const url = "/params.html?node="+node;
+    const windowName = "params"+node;
+    win = window.open(url, windowName);
+}
+
+// =========================================================================================
+// Open log
+// =========================================================================================
+function openLog(pid) {
+    const url = "/logs/"+pid;
+    const windowName = "log"+pid;
+    win = window.open(url, windowName);
+}
+
 
 // =========================================================================================
 // Populate instance list
 // =========================================================================================
 function populate_instance_list() {
-    fetch("/cgi-bin/instances.sh")
+    fetch("/nodes")
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');
             return response.json();
@@ -64,23 +82,33 @@ function populate_instance_list() {
         .then(data => {
             const tableBody = document.querySelector('#instance-table tbody');
             tableBody.innerHTML = '';
+            if (data == null) data = [];
+            data.sort((a, b) => {
+               if (a.group < b.group) return -1;
+               if (a.group > b.group) return 1;
+               return a.step - b.step;
+            });
             data.forEach(item => {
                 if (item.gain == null) item.gain = 0;
                 console.log('gain',item.gain);
                 const row = document.createElement('tr');
                 row.innerHTML = `
+            <td>${item.group}</td>
+            <td>${item.step}</td>
             <td>${item.id}</td>
             <td>${item.name}</td>
             <td>${item.plugin}</td>
             <td id="preset-${item.id}"></td>
-            <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
-            <td><button onclick="delete_instance(${item.id})">Delete</button></td>
+            <td><a href="#" onclick="openLog(${item.pid})">Log</a></td>
             <td><a href="#" onclick="openControl(${item.id})">Controls</a></td>
+            <td><a href="#" onclick="openParams(${item.id})">Params</a></td>
             <td><input type="range" step="0.01" id="volume-${item.id}"></a></td>
+            <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
+            <td><button onclick="delete_instance(${item.id},${item.pid})">Delete</button></td>
           `;
                 const node_id = item.id;
                 const minDb = -50;
-                const maxDb = 0;
+                const maxDb = 20;
                 const volval = (20*Math.log10(Number(item.gain)) - minDb)*100.0/(maxDb - minDb)
 
                 tableBody.appendChild(row);
@@ -91,7 +119,7 @@ function populate_instance_list() {
                      const percent = Number(volume.value) / 100;
                      const db = minDb + (maxDb - minDb) * percent;
                      const gain = Math.pow(10, db / 20); 
-                     const baseUrl = "/pw-volume/"+node_id+"?gain="+gain;
+                     const baseUrl = "/volume/"+node_id+"?gain="+gain;
                      console.log(baseUrl);
                      fetch(baseUrl);
                   })
@@ -136,12 +164,11 @@ function populate_instance_list() {
             });
         })
         .catch(error => {
-            console.error('instances Fetch error:', error);
+            console.error('nodrs Fetch error:', error);
             const tableBody = document.querySelector('#instance-table tbody');
             tableBody.innerHTML = `<tr><td colspan="3">Failed to load data</td></tr>`;
         });
 
-        //const baseUrl = "/cgi-bin/lv2ls.sh";
         const baseUrl = "/plugins";
         fetch(baseUrl)
             .then(response => {
@@ -170,15 +197,9 @@ function populate_instance_list() {
 // =========================================================================================
 // Delete instance
 // =========================================================================================
-function delete_instance(node_id) {
-    fetch('/cgi-bin/delete_instance.sh', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                node_id: node_id,
-            })
+function delete_instance(node_id,pid) {
+    fetch('/nodes/'+node_id+"?pid="+pid, {
+            method: 'DELETE'
         })
         .then(response => {
             if (!response.ok) {
@@ -201,16 +222,16 @@ function delete_instance(node_id) {
 // Apply preset
 // =========================================================================================
 function apply_preset(node_id, preset_uri) {
-    fetch('/cgi-bin/metadata.sh', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                node_id: node_id,
-                key: 'use_preset',
-                value: preset_uri
-            })
+    fetch('/metadata/'+node_id+'?key=use_preset&value='+preset_uri, {
+            method: 'GET',
+            //headers: {
+            //    'Content-Type': 'application/json'
+            //},
+            //body: JSON.stringify({
+            //    node_id: node_id,
+            //    key: 'use_preset',
+            //    value: preset_uri
+            //})
         })
         .then(response => {
             if (!response.ok) {
@@ -230,16 +251,16 @@ function apply_preset(node_id, preset_uri) {
 // Save preset
 // =========================================================================================
 function save_preset(node_id, preset_name) {
-    fetch('/cgi-bin/metadata.sh', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                node_id: node_id,
-                key: 'save_preset',
-                value: preset_name
-            })
+    fetch('/metadata/'+node_id+'?key=save_preset&value='+preset_name, {
+            method: 'GET',
+            //headers: {
+            //    'Content-Type': 'application/json'
+            //},
+            //body: JSON.stringify({
+            //    node_id: node_id,
+            //    key: 'save_preset',
+            //    value: preset_name
+            //})
         })
         .then(response => {
             if (!response.ok) {

@@ -16,6 +16,7 @@
 #include <lilv/lilv.h>
 #include <lv2/buf-size/buf-size.h>
 #include <lv2/parameters/parameters.h>
+#include <lv2/patch/patch.h>
 #include <lv2/state/state.h>
 #include <pipewire/pipewire.h>
 #include <stdint.h>
@@ -315,9 +316,11 @@ char *host_info_ports() {
       LilvScalePoints *points = lilv_port_get_scale_points(p, port);
       if (points) {
          strcat(info, ",\"scale\":[");
-         LILV_FOREACH(scale_points, i, points) {
-            const LilvScalePoint *point = lilv_scale_points_get(points, i);
-            if (i) strcat(info, ",");
+         int comma = 0;
+         LILV_FOREACH(scale_points, j, points) {
+            const LilvScalePoint *point = lilv_scale_points_get(points, j);
+            if (comma) strcat(info, ",");
+            comma = 1;
             sprintf(info + strlen(info), "{\"%s\":%f}",
                     lilv_node_as_string(lilv_scale_point_get_label(point)),
                     lilv_node_as_float(lilv_scale_point_get_value(point)));
@@ -337,3 +340,61 @@ char *host_info_ports() {
 
    return info;
 }
+
+char *host_info_params() {
+   const LilvPlugin *p = host->lilvPlugin;
+   strcpy(info, "[");
+
+    const LilvNode *lv2_default = lilv_new_uri(constants.world, LILV_NS_LV2 "default");
+    const LilvNode *lv2_min = lilv_new_uri(constants.world, LILV_NS_LV2 "minimum");
+    const LilvNode *lv2_max = lilv_new_uri(constants.world, LILV_NS_LV2 "maximum");
+
+    const LilvNode* patch_writable = lilv_new_uri(constants.world, LV2_PATCH__writable);
+    const LilvNodes* writable_nodes = lilv_plugin_get_value(p, patch_writable);
+
+    if (writable_nodes && lilv_nodes_size(writable_nodes) != 0) {
+        int comma = 0;
+        LILV_FOREACH(nodes, i, writable_nodes) {
+            if (comma) strcat(info, ",");
+            comma = 1;
+            strcat(info, "{");
+            const LilvNode* param = lilv_nodes_get(writable_nodes, i);
+            sprintf(info + strlen(info), "\"uri\":\"%s\"", lilv_node_as_uri(param));
+
+            const LilvNode* range = lilv_world_get(constants.world, param, constants.rdfs_range, NULL);
+            if (range) {
+                sprintf(info + strlen(info), ",\"range\":\"%s\"", lilv_node_as_uri(range));
+            } else {
+                sprintf(info + strlen(info), ",\"range\":\"unknown\"");
+            }
+
+            const LilvNode* label = lilv_world_get(constants.world, param, constants.rdfs_label, NULL);
+            if (label) {
+                sprintf(info + strlen(info), ",\"label\":\"%s\"", lilv_node_as_string(label));
+            }
+
+            const LilvNode* default_val = lilv_world_get(constants.world, param, lv2_default, NULL);
+            if (default_val) {
+               sprintf(info + strlen(info), ",\"default\":%f", lilv_node_as_float(default_val));
+            }
+
+            const LilvNode* min_val = lilv_world_get(constants.world, param, lv2_min, NULL);
+            if (min_val) {
+               sprintf(info + strlen(info), ",\"min\":%f", lilv_node_as_float(min_val));
+            }
+
+            const LilvNode* max_val = lilv_world_get(constants.world, param, lv2_max, NULL);
+            if (max_val) {
+               sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
+            }
+
+
+
+            strcat(info, "}");
+        }
+    }
+
+   strcat(info, "]");
+   return info;
+}
+

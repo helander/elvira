@@ -34,6 +34,8 @@ extern bool config_show_ui;
 extern char *config_plugin_uri;
 extern char *config_preset_uri;
 extern char *config_nodename;
+extern char *config_group;
+extern char *config_step;
 
 /* ========================================================================== */
 /*                             Public Functions                               */

@@ -49,6 +49,7 @@ struct constants {
    LilvNode *worker_schedule;
    LilvNode *worker_iface;
    LilvNode *rdfs_label;
+   LilvNode *rdfs_range;
    LilvNode *pset_Preset;
 
    URITable uri_table;
@@ -65,6 +66,8 @@ struct constants {
    LV2_URID atom_Urid;
    LV2_URID patch_Set;
    LV2_URID patch_Get;
+   LV2_URID patch_property;
+   LV2_URID patch_value;
    LV2_Atom_Forge forge;
    LV2_URID midi_MidiEvent;
    LV2_URID atom_Chunk;

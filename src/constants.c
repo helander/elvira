@@ -105,7 +105,8 @@ void constants_init() {
    constants.atom_Urid = constants_map(constants, LV2_ATOM__URID);
    constants.patch_Set = constants_map(constants, LV2_PATCH__Set);
    constants.patch_Get = constants_map(constants, LV2_PATCH__Get);
-   lv2_atom_forge_init(&constants.forge, &constants.map);
+   constants.patch_property = constants_map(constants, LV2_PATCH__property);
+   constants.patch_value = constants_map(constants, LV2_PATCH__value);
    constants.midi_MidiEvent = constants_map(constants, LV2_MIDI__MidiEvent);
    constants.atom_Chunk = constants_map(constants, LV2_ATOM__Chunk);
    constants.atom_Sequence = constants_map(constants, LV2_ATOM__Sequence);
@@ -116,5 +117,8 @@ void constants_init() {
    constants.log_Trace = constants_map(constants, LV2_LOG__Trace);
 
    constants.rdfs_label = lilv_new_uri(constants.world, (LILV_NS_RDFS "label"));
+   constants.rdfs_range = lilv_new_uri(constants.world, (LILV_NS_RDFS "range"));
    constants.pset_Preset = lilv_new_uri(constants.world, (LV2_PRESETS__Preset));
+
+   lv2_atom_forge_init(&constants.forge, &constants.map);
 }
