@@ -32,6 +32,7 @@ function create_instance() {
                 if (!response.ok) throw new Error('Network response was not ok');
                 sleep(2000).then(() => {
                     populate_instance_list();
+                    fetch('/links').then(response => {});
                 });
                 return response.text();
             })
@@ -207,7 +208,8 @@ function delete_instance(node_id,pid) {
             }
             sleep(100).then(() => {
                 populate_instance_list();
-            });
+                fetch('/links').then(response => {});
+           });
             return response.text();
         })
         .then(text => {
@@ -328,3 +330,5 @@ let current_value = null;
 cancel_save_preset(); // Hide element
 cancel_new_instance(); // Hide element
 populate_instance_list();
+
+fetch('/links').then(response => {});
