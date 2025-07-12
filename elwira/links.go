@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -58,7 +59,7 @@ func parsePwLinkOutput(output string) []Link {
 	return links
 }
 
-func buildBEHfromG(G []GroupMember) []Link {
+func buildBEHfromG(G []GroupMember, midiSource string) []Link {
 	var links []Link
 	for _, g := range G {
 		from := g.Name + ":out.FL"
@@ -68,6 +69,12 @@ func buildBEHfromG(G []GroupMember) []Link {
 		to = g.ToR
 		links = append(links, parseLink(from, to))
 	}
+        links = append(links, parseLink(midiSource, G[0].Name+":in.midi"))
+
+
+
+
+
 	return links
 }
 
@@ -176,7 +183,7 @@ func updateToLToR(G []GroupMember, lastToL, lastToR string) []GroupMember {
 	return G
 }
 
-func processGroup(groupName string, G []GroupMember, BEF []Link, lastToL, lastToR string) {
+func processGroup(groupName string, G []GroupMember, BEF []Link, lastToL, lastToR string, midiSource string) {
 	log.Printf("=====================================")
 	log.Printf("== Hanterar grupp: %s", groupName)
 
@@ -190,7 +197,7 @@ func processGroup(groupName string, G []GroupMember, BEF []Link, lastToL, lastTo
 
 	G = updateToLToR(G, lastToL, lastToR)
 
-	BEH := buildBEHfromG(G)
+	BEH := buildBEHfromG(G, midiSource)
 	logLinks("BEH (förväntade länkar)", BEH)
 
 	nameSet := make(map[string]struct{})
@@ -248,11 +255,16 @@ func linksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("== Hittade %d unika grupper", len(groups))
 
-	lastToL := "alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo:playback_FL"
-	lastToR := "alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo:playback_FR"
+	lastToL := os.Getenv("ELWIRA_AUDIO_SINK_L")
+	lastToR := os.Getenv("ELWIRA_AUDIO_SINK_R")
+	midiSource := os.Getenv("ELWIRA_MIDI_SOURCE")
+
+	log.Printf("Send output audio to %s",lastToL)
+	log.Printf("Send output audio to %s",lastToR)
+	log.Printf("Redeive midi from %s",midiSource)
 
 	for groupName, G := range groups {
-		processGroup(groupName, G, BEF, lastToL, lastToR)
+		processGroup(groupName, G, BEF, lastToL, lastToR, midiSource)
 	}
 }
 

@@ -70,6 +70,8 @@ static const char *audio_in_0 = "in.FL";
 static const char *audio_in_1 = "in.FR";
 static const char *audio_out_0 = "out.FL";
 static const char *audio_out_1 = "out.FR";
+static const char *midi_in_0 = "in.midi";
+static const char *midi_out_0 = "out.midi";
 //static const char *audio_channel_0 = "FL";
 //static const char *audio_channel_1 = "FR";
 /* ========================================================================== */
@@ -78,6 +80,8 @@ static const char *audio_out_1 = "out.FR";
 static void create_node_ports() {
    int audio_input_index = 0;
    int audio_output_index = 0;
+   int midi_input_index = 0;
+   int midi_output_index = 0;
    const char *port_name;
    //const char *audio_channel;
    set_init(&node->ports);
@@ -107,20 +111,36 @@ static void create_node_ports() {
             node_port = NULL;
             break;
          case HOST_ATOM_INPUT:
+            switch (midi_input_index) {
+               case 0:
+                   port_name = midi_in_0;
+                   break;
+               default:
+                   port_name = host_port->name;
+            }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, midi_input_format, PW_KEY_PORT_NAME,
-                                  host_port->name, NULL),
+                                  port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_INPUT;
+            midi_input_index++;
             break;
          case HOST_ATOM_OUTPUT:
+            switch (midi_output_index) {
+               case 0:
+                   port_name = midi_out_0;
+                   break;
+               default:
+                   port_name = host_port->name;
+            }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, "8 bit raw midi", PW_KEY_PORT_NAME,
-                                  host_port->name, NULL),
+                                  port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_OUTPUT;
+            midi_output_index++;
             break;
          case HOST_AUDIO_INPUT:
             switch (audio_input_index) {
