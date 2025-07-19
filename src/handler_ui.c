@@ -24,6 +24,7 @@
 #include "node.h"
 #include "ports.h"
 #include "runtime.h"
+#include "util.h"
 
 /* ========================================================================== */
 /*                               Local State                                  */
@@ -66,17 +67,25 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
       const LilvNode* bundle_uri = lilv_ui_get_bundle_uri(ui);
    }
 
-   const char* host_type_uri = "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
-   LilvNode* host_type = lilv_new_uri(constants.world, host_type_uri);
-   if (!lilv_ui_is_supported(selectedUI, suil_ui_supported, host_type, &selected_ui_type)) {
-      selectedUI = NULL;
+   if (selectedUI) {
+     const char* host_type_uri = "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
+     LilvNode* host_type = lilv_new_uri(constants.world, host_type_uri);
+     if (!lilv_ui_is_supported(selectedUI, suil_ui_supported, host_type, &selected_ui_type)) {
+        selectedUI = NULL;
+     }
+     lilv_node_free(host_type);
+     if (!selectedUI) {
+        pw_log_error("UI not supported by this host.");
+     }
+   } else {
+     pw_log_warn("No UI available for this plugin.");
    }
-   lilv_node_free(host_type);
 
    pw_log_info("Plugin: %s", lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)));
-   pw_log_info("Selected UI: %s", lilv_node_as_string(lilv_ui_get_uri(selectedUI)));
-   pw_log_info("Selected UI type: %s", lilv_node_as_string(selected_ui_type));
-
+   if (selectedUI) {
+     pw_log_info("Selected UI: %s", lilv_node_as_string(lilv_ui_get_uri(selectedUI)));
+     pw_log_info("Selected UI type: %s", lilv_node_as_string(selected_ui_type));
+   }
    const LV2_Feature instance_feature = {LV2_INSTANCE_ACCESS_URI,
                                          lilv_instance_get_handle(host->instance)};
 
@@ -85,12 +94,16 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
    const LV2_Feature* ui_features[] = {&constants.map_feature, &constants.unmap_feature,
                                        &instance_feature, &idle_feature, NULL};
 
+   char title[100];
+   strcpy(title, config_nodename);
+   if (!selectedUI) strcat(title, " -- no UI available");
    GtkWidget* plugin_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title(GTK_WINDOW(plugin_window), config_nodename);
-   gtk_window_set_default_size(GTK_WINDOW(plugin_window), 200, 150);
+   gtk_window_set_title(GTK_WINDOW(plugin_window), title);
+   gtk_window_set_default_size(GTK_WINDOW(plugin_window), 400, 150);
    gtk_widget_show_all(plugin_window);
 
-   host->suil_instance = suil_instance_new(
+   if (selectedUI) {
+     host->suil_instance = suil_instance_new(
        suil_host, (void*)host, "http://lv2plug.in/ns/extensions/ui#Gtk3UI",
        lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)),
        lilv_node_as_string(lilv_ui_get_uri(selectedUI)), lilv_node_as_string(selected_ui_type),
@@ -98,12 +111,13 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
        lilv_file_uri_parse(lilv_node_as_uri(lilv_ui_get_binary_uri(selectedUI)), NULL),
        ui_features);
 
-   if (host->suil_instance) {
+     if (host->suil_instance) {
       GtkWidget* plugin_widget = suil_instance_get_widget(host->suil_instance);
       gtk_container_add(GTK_CONTAINER(plugin_window), plugin_widget);
       gtk_widget_show_all(plugin_window);
-   } else {
+     } else {
       pw_log_error("Could not create UI for %s", config_nodename);
+     }
    }
    return 0;
 }
@@ -112,11 +126,13 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
 int on_port_event_aseq(struct spa_loop* loop, bool async, uint32_t port_index, const void* data,
                        size_t size, void* user_data) {
    LV2_Atom_Sequence* aseq = (LV2_Atom_Sequence*)data;
+   pw_log_debug("PORT EVENT aseq");
    if (host->suil_instance) {
       LV2_Atom_Event* aev = (LV2_Atom_Event*)((char*)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
       if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
          long payloadSize = aseq->atom.size;
          while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
+            //util_print_atom(&aev->body);
             suil_instance_port_event(host->suil_instance, port_index, aev->body.size,
                                      constants.atom_eventTransfer, &aev->body);
             int eventSize =
@@ -132,7 +148,56 @@ int on_port_event_aseq(struct spa_loop* loop, bool async, uint32_t port_index, c
 // seq is used to pass the port index and data passes the atom
 int on_port_event_atom(struct spa_loop* loop, bool async, uint32_t port_index, const void* atom,
                        size_t size, void* user_data) {
+   pw_log_debug("PORT EVENT atom");
+   //util_print_atom(atom);
    if (host->suil_instance)
       suil_instance_port_event(host->suil_instance, port_index, size, constants.atom_eventTransfer,
                                atom);
+}
+
+
+
+// seq is used to pass the port index and data passes the midi data
+int on_output_midi_event(struct spa_loop* loop, bool async, uint32_t port_index, const void* data,
+                       size_t size, void* user_data) {
+   uint8_t *mididata = (uint8_t *)data;
+   if (mididata[0] == 0xB0) {
+     // midi CC channel 0
+     int cc = mididata[1];
+     int val = mididata[2];
+     pw_log_debug("Output Midi CC %d %d",mididata[0],cc,val);
+
+     struct spa_dict_item items[1];
+     char prop_name[100];
+     sprintf(prop_name,"elvira.midicc.%d",cc);
+     char prop_value[20];
+     sprintf(prop_value,"%d",val);
+     items[0] = SPA_DICT_ITEM_INIT(prop_name, prop_value);
+     pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
+   } else {
+     pw_log_debug("Output Midi 0x%02x 0x%02x 0x%02x",mididata[0],mididata[1],mididata[2]);
+   }
+}
+
+
+// seq is used to pass the port index and data passes the midi data
+int on_input_midi_event(struct spa_loop* loop, bool async, uint32_t port_index, const void* data,
+                       size_t size, void* user_data) {
+   uint8_t *mididata = (uint8_t *)data;
+   if (mididata[0] == 0xB0) {
+     // midi CC channel 0
+     int cc = mididata[1];
+     int val = mididata[2];
+     pw_log_debug("Input Midi CC 0x%02x %d %d",mididata[0],cc,val);
+
+     struct spa_dict_item items[1];
+     char prop_name[100];
+     sprintf(prop_name,"elvira.midicc.%d",cc);
+     char prop_value[20];
+     sprintf(prop_value,"%d",val);
+     items[0] = SPA_DICT_ITEM_INIT(prop_name, prop_value);
+     pw_filter_update_properties(node->filter, NULL, &SPA_DICT_INIT(items, 1));
+   } else {
+     pw_log_debug("Input Midi 0x%02x 0x%02x 0x%02x",mididata[0],mididata[1],mididata[2]);
+   }
 }

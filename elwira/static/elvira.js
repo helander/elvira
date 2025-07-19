@@ -6,6 +6,8 @@
    Description:    Control page support functions
 */
 
+var group_name = "";
+
 // =========================================================================================
 // Run operations after millisec time delay
 // =========================================================================================
@@ -14,18 +16,16 @@ function sleep(time) {
 }
 
 // =========================================================================================
-// Create new elvira instance
+// Add new elvira group  (first instance in group)
 // =========================================================================================
-function create_instance() {
-    const plugin_uri = document.querySelector('#plugin-select');
-    const instance_name = document.querySelector('#new-instance-name');
-    const instance_showui = document.querySelector('#new-instance-showui');
+function add_step(name, step, plugin, showui) {
     {
         const baseUrl = "/elvira";
         const params = new URLSearchParams({
-            name: instance_name.value,
-            uri: plugin_uri.value,
-            showui: instance_showui.checked
+            name: name,
+            step: step,
+            uri: plugin,
+            showui: showui
         });
         fetch(`${baseUrl}?${params.toString()}`)
             .then(response => {
@@ -49,6 +49,15 @@ function create_instance() {
 function openControl(node) {
     const url = "/control-inputs.html?node="+node;
     const windowName = "control"+node;
+    win = window.open(url, windowName);
+}
+
+// =========================================================================================
+// Open midi
+// =========================================================================================
+function openMidi(node) {
+    const url = "/midicc.html?node="+node;
+    const windowName = "midicc"+node;
     win = window.open(url, windowName);
 }
 
@@ -89,6 +98,15 @@ function populate_instance_list() {
                if (a.group > b.group) return 1;
                return a.step - b.step;
             });
+            previous_item = null;
+            data.forEach(item => {
+                if (previous_item != null) {
+                   if (item.group == previous_item.group) {
+                     previous_item.next_step = item.step;
+                   }
+                }
+                previous_item = item;
+            });
             data.forEach(item => {
                 if (item.gain == null) item.gain = 0;
                 console.log('gain',item.gain);
@@ -98,14 +116,16 @@ function populate_instance_list() {
             <td>${item.step}</td>
             <td>${item.id}</td>
             <td>${item.name}</td>
-            <td>${item.plugin}</td>
+            <td>${item.plugin_name}</td>
             <td id="preset-${item.id}"></td>
             <td><a href="#" onclick="openLog(${item.pid})">Log</a></td>
             <td><a href="#" onclick="openControl(${item.id})">Controls</a></td>
             <td><a href="#" onclick="openParams(${item.id})">Params</a></td>
+            <td><a href="#" onclick="openMidi(${item.id})">MidiCC</a></td>
             <td><input type="range" step="0.01" id="volume-${item.id}"></a></td>
             <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
             <td><button onclick="delete_instance(${item.id},${item.pid})">Delete</button></td>
+            <td><button onclick="add_step_popup('${item.group}',${item.step},${item.next_step})">+</button></td>
           `;
                 const node_id = item.id;
                 const minDb = -50;
@@ -170,6 +190,7 @@ function populate_instance_list() {
             tableBody.innerHTML = `<tr><td colspan="3">Failed to load data</td></tr>`;
         });
 
+/*
         const baseUrl = "/plugins";
         fetch(baseUrl)
             .then(response => {
@@ -193,6 +214,7 @@ function populate_instance_list() {
             .catch(error => {
                 console.error('presets Fetch error:', error);
             });
+*/
 }
 
 // =========================================================================================
@@ -281,7 +303,8 @@ function save_preset(node_id, preset_name) {
 function submit_save_preset() {
     const name = document.getElementById('save-preset-name').value;
     save_preset(current_value, name);
-    document.getElementById('save-preset-popup').style.display = 'none';
+    //document.getElementById('save-preset-popup').style.display = 'none';
+    document.getElementById('save-preset-popup').close();
     document.getElementById('save-preset-name').value = ''; // Clear in
     sleep(1000).then(() => {
         populate_instance_list();
@@ -289,7 +312,8 @@ function submit_save_preset() {
 }
 
 function cancel_save_preset() {
-    document.getElementById('save-preset-popup').style.display = 'none';
+    //document.getElementById('save-preset-popup').style.display = 'none';
+    document.getElementById('save-preset-popup').close();
     document.getElementById('save-preset-name').value = ''; // Clear in
 }
 
@@ -297,9 +321,11 @@ function show_save_preset_popup(button) {
     // Save the button-specific value
     current_value = button.getAttribute('data-id');
     // Show the popup
-    document.getElementById('save-preset-popup').style.display = 'block';
+    //document.getElementById('save-preset-popup').style.display = 'block';
+    document.getElementById('save-preset-popup').showModal();
 }
 
+/*
 // =========================================================================================
 // New instance
 // =========================================================================================
@@ -322,13 +348,116 @@ function show_new_instance_popup() {
     // Show the popup
     document.getElementById('new-instance-popup').style.display = 'block';
 }
+*/
+
+// =========================================================================================
+// Add Group popup
+// =========================================================================================
+function add_group_ok() {
+    const name = document.getElementById('add-group-name').value;
+    const plugin = document.getElementById('add-group-plugin').value;
+    const showui = document.getElementById('add-group-showui').checked;
+    add_step(name,"0",plugin,showui);
+    //document.getElementById('add-group-popup').style.display = 'none';
+    document.getElementById('add-group-popup').close();
+    document.getElementById('add-group-name').value = ''; // Clear in
+    sleep(2000).then(() => {
+        populate_instance_list();
+    });
+}
+
+function add_group_cancel() {
+    document.getElementById('add-group-popup').close();
+    //document.getElementById('add-group-popup').style.display = 'none';
+    document.getElementById('add-group-name').value = ''; // Clear in
+    document.getElementById('add-group-plugin').innerHTML = ''; // Clear plugin uri options
+}
+
+function add_group_popup() {
+    console.log('add_group_popup');
+
+
+    const baseUrl = "/plugins";
+    fetch(baseUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const pluginSelect = document.querySelector("#add-group-plugin");
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.innerHTML = `${item}`;
+                    pluginSelect.appendChild(opt);
+                });
+                //document.getElementById('add-group-popup').style.display = 'block';
+                document.getElementById('add-group-popup').showModal();
+            })
+            .catch(error => {
+                console.error('plugins Fetch error:', error);
+            });
+}
+// =========================================================================================
+// Add Step popup
+// =========================================================================================
+function add_step_ok() {
+    const step = document.getElementById('add-step-number').value;
+    const plugin = document.getElementById('add-step-plugin').value;
+    const showui = document.getElementById('add-step-showui').checked;
+    add_step(group_name,step,plugin,showui);
+    //document.getElementById('add-step-popup').style.display = 'none';
+    document.getElementById('add-step-popup').close();
+    document.getElementById('add-step-number').value = ''; // Clear in
+    sleep(2000).then(() => {
+        populate_instance_list();
+    });
+}
+
+function add_step_cancel() {
+    //document.getElementById('add-step-popup').style.display = 'none';
+    document.getElementById('add-step-popup').close();
+    document.getElementById('add-step-number').value = ''; // Clear in
+    document.getElementById('add-step-plugin').innerHTML = ''; // Clear plugin uri options
+}
+
+
+function add_step_popup(group,step,next_step) {
+    group_name = group;
+    let proposed_step;
+    if (next_step !== undefined) {
+      proposed_step = Number(step) + (Number(next_step)-Number(step))/2;
+    } else {
+      proposed_step = Number(step) + 10;
+    }
+    const baseUrl = "/plugins";
+    fetch(baseUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const pluginSelect = document.querySelector("#add-step-plugin");
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.innerHTML = `${item}`;
+                    pluginSelect.appendChild(opt);
+                });
+                //document.getElementById('add-step-popup').style.display = 'block';
+                document.getElementById('add-step-number').value = Math.round(proposed_step).toString();
+                document.getElementById('add-step-popup').showModal();
+            })
+            .catch(error => {
+                console.error('plugins Fetch error:', error);
+            });
+}
 
 // =========================================================================================
 // On load
 // =========================================================================================
 let current_value = null;
 cancel_save_preset(); // Hide element
-cancel_new_instance(); // Hide element
+add_group_cancel(); // Hide element
+add_step_cancel(); // Hide element
 populate_instance_list();
 
 fetch('/links').then(response => {});

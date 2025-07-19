@@ -37,6 +37,7 @@ type NodeInfo struct {
 	Pid    float64     `json:"pid"`
 	Gain   float64 `json:"gain"`
 	Plugin string  `json:"plugin,omitempty"`
+	PluginName string  `json:"plugin_name,omitempty"`
 	Preset string  `json:"preset,omitempty"`
 }
 
@@ -183,6 +184,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			Pid:    props["elvira.pid"].(float64),
 			Gain:   props["elvira.gain"].(float64),
 			Plugin: stringVal(props["elvira.plugin"]),
+			PluginName: stringVal(props["elvira.plugin_name"]),
 			Preset: stringVal(props["elvira.preset"]),
 		}
 		result = append(result, node)

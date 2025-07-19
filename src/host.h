@@ -38,6 +38,7 @@ typedef struct HostPort HostPort;
 
 struct Host {
    const LilvPlugin *lilvPlugin;  // byt namn till lilv_plugin
+   const char  *plugin_name;
    LilvNode *lilv_preset;
    LilvInstance *instance;  // byt namn till lilv_instance
    LV2_Handle handle;       // byt namn till lv2_handle
@@ -93,3 +94,4 @@ extern void host_ports_discover();
 extern char *host_info_base();
 extern char *host_info_ports();
 extern char *host_info_params();
+extern char *host_midi_params();

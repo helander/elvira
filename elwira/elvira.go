@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -9,22 +8,9 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/extra", indexHandler)
 	http.HandleFunc("/elvira", elviraHandler)
 
 }
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, `
-	<html><body>
-	<h2>Starta bakgrundsprogram</h2>
-	<form action="/start" method="POST">
-		Kommando: <input name="cmd" value="bash -c 'for i in {1..40}; do echo rad $i; sleep 1; done'">
-		<input type="submit" value="Starta">
-	</form>
-	</body></html>`)
-}
-
 
 // Add signal handler to force removal of defunct child processes
 func elviraHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,17 +23,13 @@ func elviraHandler(w http.ResponseWriter, r *http.Request) {
         name := r.URL.Query()["name"][0]
         uri := r.URL.Query()["uri"][0]
         showui := r.URL.Query()["showui"][0]
+        step := r.URL.Query()["step"][0]
 
         if (showui == "true") {
           showui = "--showui"
         } else {
           showui = ""
         }
-	//cmdline := r.FormValue("cmd")
-	//if cmdline == "" {
-	//	http.Error(w, "Kommando saknas", 400)
-	//	return
-	//}
 
 	// Skapa temporär fil och ta bort den direkt (unlink)
 	tmpfile, err := os.CreateTemp("", "log")
@@ -58,7 +40,7 @@ func elviraHandler(w http.ResponseWriter, r *http.Request) {
 	defer tmpfile.Close()
 	os.Remove(tmpfile.Name()) // unlink direkt
 
-	cmd := exec.Command("elvira", name, uri, showui)
+	cmd := exec.Command("elvira", name, uri, "--step", step,showui)
 	cmd.Stdout = tmpfile
 	cmd.Stderr = tmpfile
 	cmd.ExtraFiles = []*os.File{tmpfile}
@@ -72,7 +54,5 @@ func elviraHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//pid := cmd.Process.Pid
-	//http.Redirect(w, r, fmt.Sprintf("/logs/%d", pid), http.StatusSeeOther)
 }
 

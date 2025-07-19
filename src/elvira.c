@@ -35,7 +35,7 @@ static void startup() {
    node->filter = NULL;
    host->lilv_preset = NULL;
    host->suil_instance = NULL;
-   printf("\nStarting engine %s %s (%s)\n\n", config_nodename, config_plugin_uri,
+   printf("\nStarting engine group %s step %s plugin %s preset %s\n\n", config_group, config_step, config_plugin_uri,
           config_preset_uri);
    pw_thread_loop_start(runtime_primary_event_loop);
    pw_thread_loop_start(runtime_worker_event_loop);
@@ -67,10 +67,12 @@ static void startup() {
 /* ========================================================================== */
 int main(int argc, char **argv) {
    char lv2_path[100];
-   sprintf(lv2_path, "%s/.lv2:/usr/lib/lv2", getenv("HOME"));
+   sprintf(lv2_path, "%s/.lv2:%s/.lv2-plugins", getenv("HOME"), getenv("HOME"));
    setenv("LV2_PATH", lv2_path, 0);
    if (getenv("PIPEWIRE_DEBUG") == NULL) setenv("PIPEWIRE_DEBUG", "3", 0);
    printf("\nlv2_path [%s]", getenv("LV2_PATH"));
+   printf("\ndisplay [%s]", getenv("DISPLAY"));
+   printf("\nhome [%s]", getenv("HOME"));
 
    // Potentially used when creating presets, so create it here in case
    mkdir("/tmp/elvira", 0777);
@@ -108,7 +110,7 @@ int main(int argc, char **argv) {
       } else {
          if (pos_arg_cnt == 0) {
             if (i < argc)
-               config_nodename = strdup(argv[i]);
+               config_group = strdup(argv[i]);
             else
                syntax_error = true;
          } else if (pos_arg_cnt == 1) {
@@ -117,16 +119,19 @@ int main(int argc, char **argv) {
          pos_arg_cnt++;
       }
    }
-   if (config_nodename == NULL || config_plugin_uri == NULL) syntax_error = true;
+   if (config_group == NULL || config_plugin_uri == NULL) syntax_error = true;
    if (pos_arg_cnt < 2 || syntax_error) {
       fprintf(stderr,
-              "\nUsage: $ elvira <engine-nam>e <plugin-uri> [--showui] [--latency period] [--samplerate rate] "
-              "[--preset uri] [--group groupname] [--step stepnumber]\n");
+              "\nUsage: $ elvira <group-name> <plugin-uri> [--step stepnumber] [--showui] [--latency period] [--samplerate rate] "
+              "[--preset uri]\n");
       exit(-1);
    }
 
-  if (config_step == NULL) config_step = "0";
-  if (config_group == NULL) config_group = config_nodename;
+   if (config_step == NULL) config_step = "0";
+
+   char nodename[100];
+   sprintf(nodename,"%s-%s", config_group, config_step);
+   config_nodename = strdup(nodename);
 
    gtk_init(&argc, &argv);
    pw_init(&argc, &argv);

@@ -98,6 +98,14 @@ Host *host = &the_host;
 int host_setup() {
    constants_init();
    load_plugin();
+
+   const LilvNode* name_node = lilv_plugin_get_name(host->lilvPlugin);
+   if (name_node) {
+       host->plugin_name = lilv_node_as_string(name_node);
+   } else {
+       host->plugin_name = "UNDEFINED";
+   }
+
    {
       uint32_t n_features = 0;
       static const int32_t min_block_length = 1;
@@ -321,7 +329,7 @@ char *host_info_ports() {
             const LilvScalePoint *point = lilv_scale_points_get(points, j);
             if (comma) strcat(info, ",");
             comma = 1;
-            sprintf(info + strlen(info), "{\"%s\":%f}",
+            sprintf(info + strlen(info), "{\"label\":\"%s\",\"value\":%f}",
                     lilv_node_as_string(lilv_scale_point_get_label(point)),
                     lilv_node_as_float(lilv_scale_point_get_value(point)));
          }
@@ -388,7 +396,144 @@ char *host_info_params() {
                sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
             }
 
+            LilvNode* sp_pred = lilv_new_uri(constants.world, LILV_NS_LV2 "scalePoint");
+            const LilvNodes* scale_points =
+                lilv_world_find_nodes(constants.world, param, sp_pred, NULL);
 
+
+            strcat(info, ",\"scale\":[");
+            int comma = 0;
+            LILV_FOREACH(nodes, k, scale_points) {
+                const LilvNode* sp_bnode = lilv_nodes_get(scale_points, k);
+
+                LilvNode* val_pred = lilv_new_uri(constants.world, LILV_NS_RDF "value");
+                LilvNode* lab_pred = lilv_new_uri(constants.world, LILV_NS_RDFS "label");
+                const LilvNodes* values = lilv_world_find_nodes(constants.world, sp_bnode, val_pred, NULL);
+                const LilvNodes* labels = lilv_world_find_nodes(constants.world, sp_bnode, lab_pred, NULL);
+
+                if (values && labels && lilv_nodes_size(values) && lilv_nodes_size(labels)) {
+                    const LilvNode* value = lilv_nodes_get_first(values);
+                    const LilvNode* label = lilv_nodes_get_first(labels);
+                    if (comma) strcat(info, ",");
+                    comma = 1;
+                    sprintf(info + strlen(info), "{\"label\":\"%s\",\"value\":%f}",
+                       lilv_node_as_string(label),
+                       lilv_node_as_float(value));
+                }
+                lilv_node_free(lab_pred);
+                lilv_node_free(val_pred);
+                lilv_nodes_free((LilvNodes*)labels);
+                lilv_nodes_free((LilvNodes*)values);
+            }
+
+            strcat(info, "]");
+
+            lilv_node_free(sp_pred);
+            lilv_nodes_free((LilvNodes*)scale_points);
+
+            strcat(info, "}");
+        }
+    }
+
+   strcat(info, "]");
+   return info;
+}
+
+char *host_midi_params() {
+   const LilvPlugin *p = host->lilvPlugin;
+   strcpy(info, "[");
+
+    const LilvNode *lv2_default = lilv_new_uri(constants.world, LILV_NS_LV2 "default");
+    const LilvNode *lv2_min = lilv_new_uri(constants.world, LILV_NS_LV2 "minimum");
+    const LilvNode *lv2_max = lilv_new_uri(constants.world, LILV_NS_LV2 "maximum");
+    const LilvNode *lv2_toggle = lilv_new_uri(constants.world, LILV_NS_LV2 "toggle");
+    const LilvNode *lv2_enumeration = lilv_new_uri(constants.world, LILV_NS_LV2 "enumeration");
+    const LilvNode *lv2_portProperty = lilv_new_uri(constants.world, LILV_NS_LV2 "portProperty");
+    const LilvNode* midi_cc = lilv_new_uri(constants.world, "http://helander.network/lv2/elvira#midiCC");
+
+    const LilvNode* midi_params = lilv_new_uri(constants.world, "http://helander.network/lv2/elvira#midi_params");
+    const LilvNodes* parameter_nodes = lilv_plugin_get_value(p, midi_params);
+
+    if (parameter_nodes && lilv_nodes_size(parameter_nodes) != 0) {
+        int comma = 0;
+        LILV_FOREACH(nodes, i, parameter_nodes) {
+            if (comma) strcat(info, ",");
+            comma = 1;
+            strcat(info, "{");
+            const LilvNode* param = lilv_nodes_get(parameter_nodes, i);
+            sprintf(info + strlen(info), "\"uri\":\"%s\"", lilv_node_as_uri(param));
+
+            const LilvNode* midicc = lilv_world_get(constants.world, param, midi_cc, NULL);
+            if (midicc) {
+                sprintf(info + strlen(info), ",\"midicc\":%s", lilv_node_as_string(midicc));
+            }
+
+            const LilvNode* label = lilv_world_get(constants.world, param, constants.rdfs_label, NULL);
+            if (label) {
+                sprintf(info + strlen(info), ",\"label\":\"%s\"", lilv_node_as_string(label));
+            }
+
+            const LilvNode* default_val = lilv_world_get(constants.world, param, lv2_default, NULL);
+            if (default_val) {
+               sprintf(info + strlen(info), ",\"default\":%f", lilv_node_as_float(default_val));
+            }
+
+            const LilvNode* min_val = lilv_world_get(constants.world, param, lv2_min, NULL);
+            if (min_val) {
+               sprintf(info + strlen(info), ",\"min\":%f", lilv_node_as_float(min_val));
+            }
+
+            const LilvNode* max_val = lilv_world_get(constants.world, param, lv2_max, NULL);
+            if (max_val) {
+               sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
+            }
+
+            const bool enumeration = lilv_world_ask(constants.world, param, lv2_portProperty, lv2_enumeration);
+            if (enumeration) {
+               sprintf(info + strlen(info), ",\"enum\":true");
+            } else {
+               sprintf(info + strlen(info), ",\"enum\":false");
+            }
+
+            const bool toggle = lilv_world_ask(constants.world, param, lv2_portProperty, lv2_toggle);
+            if (toggle) {
+               sprintf(info + strlen(info), ",\"toggle\":true");
+            } else {
+               sprintf(info + strlen(info), ",\"toggle\":false");
+            }
+
+            LilvNode* sp_pred = lilv_new_uri(constants.world, LILV_NS_LV2 "scalePoint");
+            const LilvNodes* scale_points =
+                lilv_world_find_nodes(constants.world, param, sp_pred, NULL);
+            /*if (scale_points)*/ strcat(info, ",\"scale\":[");
+            int comma = 0;
+            LILV_FOREACH(nodes, k, scale_points) {
+                const LilvNode* sp_bnode = lilv_nodes_get(scale_points, k);
+
+                LilvNode* val_pred = lilv_new_uri(constants.world, LILV_NS_RDF "value");
+                LilvNode* lab_pred = lilv_new_uri(constants.world, LILV_NS_RDFS "label");
+                const LilvNodes* values = lilv_world_find_nodes(constants.world, sp_bnode, val_pred, NULL);
+                const LilvNodes* labels = lilv_world_find_nodes(constants.world, sp_bnode, lab_pred, NULL);
+
+                if (values && labels && lilv_nodes_size(values) && lilv_nodes_size(labels)) {
+                    const LilvNode* value = lilv_nodes_get_first(values);
+                    const LilvNode* label = lilv_nodes_get_first(labels);
+                    if (comma) strcat(info, ",");
+                    comma = 1;
+                    sprintf(info + strlen(info), "{\"label\":\"%s\",\"value\":%f}",
+                       lilv_node_as_string(label),
+                       lilv_node_as_float(value));
+                }
+                lilv_node_free(lab_pred);
+                lilv_node_free(val_pred);
+                lilv_nodes_free((LilvNodes*)labels);
+                lilv_nodes_free((LilvNodes*)values);
+            }
+
+            /*if (scale_points)*/ strcat(info, "]");
+
+            lilv_node_free(sp_pred);
+            lilv_nodes_free((LilvNodes*)scale_points);
 
             strcat(info, "}");
         }

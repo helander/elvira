@@ -50,6 +50,7 @@ add_executable(elvira
     src/handler_ui.c
     src/constants.c
     src/runtime.c
+    src/util.c
 )
 
 target_include_directories(elvira PRIVATE

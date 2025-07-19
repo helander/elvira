@@ -58,3 +58,7 @@ extern int on_port_event_atom(struct spa_loop *loop, bool async, uint32_t seq, c
                               size_t size, void *user_data);
 extern int on_port_event_aseq(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
                               size_t size, void *user_data);
+extern int on_input_midi_event(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                              size_t size, void *user_data);
+extern int on_output_midi_event(struct spa_loop *loop, bool async, uint32_t seq, const void *data,
+                              size_t size, void *user_data);

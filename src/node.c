@@ -37,9 +37,9 @@
 /*                               Local State                                  */
 /* ========================================================================== */
 #if USE_UMP
-static const char *midi_input_format = "32 bit raw UMP";
+static const char *midi_format = "32 bit raw UMP";
 #else
-static const char *midi_input_format = "8 bit raw midi";
+static const char *midi_format = "8 bit raw midi";
 #endif
 
 static Node the_node;
@@ -72,8 +72,6 @@ static const char *audio_out_0 = "out.FL";
 static const char *audio_out_1 = "out.FR";
 static const char *midi_in_0 = "in.midi";
 static const char *midi_out_0 = "out.midi";
-//static const char *audio_channel_0 = "FL";
-//static const char *audio_channel_1 = "FR";
 /* ========================================================================== */
 /*                              Local Functions                               */
 /* ========================================================================== */
@@ -83,7 +81,6 @@ static void create_node_ports() {
    int midi_input_index = 0;
    int midi_output_index = 0;
    const char *port_name;
-   //const char *audio_channel;
    set_init(&node->ports);
    HostPort *host_port;
    SET_FOR_EACH(HostPort *, host_port, &host->ports) {
@@ -120,7 +117,7 @@ static void create_node_ports() {
             }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-                pw_properties_new(PW_KEY_FORMAT_DSP, midi_input_format, PW_KEY_PORT_NAME,
+                pw_properties_new(PW_KEY_FORMAT_DSP, midi_format, PW_KEY_PORT_NAME,
                                   port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_INPUT;
@@ -136,7 +133,7 @@ static void create_node_ports() {
             }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-                pw_properties_new(PW_KEY_FORMAT_DSP, "8 bit raw midi", PW_KEY_PORT_NAME,
+                pw_properties_new(PW_KEY_FORMAT_DSP, midi_format, PW_KEY_PORT_NAME,
                                   port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_CONTROL_OUTPUT;
@@ -146,20 +143,17 @@ static void create_node_ports() {
             switch (audio_input_index) {
                case 0:
                    port_name = audio_in_0;
-                   //audio_channel = audio_channel_0;
                    break;
                case 1:
                    port_name = audio_in_1;
-                   //audio_channel = audio_channel_1;
                    break;
                default:
                    port_name = host_port->name;
-                   //audio_channel = "";
             }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_INPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio", PW_KEY_PORT_NAME,
-                                  port_name, /*"audio.channel", audio_channel,*/ NULL),
+                                  port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_AUDIO_INPUT;
             audio_input_index++;
@@ -168,20 +162,17 @@ static void create_node_ports() {
             switch (audio_output_index) {
                case 0:
                    port_name = audio_out_0;
-                   //audio_channel = audio_channel_0;
                    break;
                case 1:
                    port_name = audio_out_1;
-                   //audio_channel = audio_channel_1;
                    break;
                default:
                    port_name = host_port->name;
-                   //audio_channel = "";
             }
             node_port->pwPort = pw_filter_add_port(
                 node->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
                 pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio", PW_KEY_PORT_NAME,
-                                  port_name, /*"audio.channel", audio_channel,*/ NULL),
+                                  port_name, NULL),
                 NULL, 0);
             node_port->type = NODE_AUDIO_OUTPUT;
             audio_output_index++;
@@ -231,25 +222,19 @@ int node_setup() {
 
    struct pw_properties *props;
    props = pw_properties_new(PW_KEY_NODE_LATENCY, latency, PW_KEY_NODE_ALWAYS_PROCESS, "true", NULL);
-   //pw_properties_set(props, "media.class", "Audio/Filter");
    pw_properties_set(props, "media.name", "");
-   //pw_properties_set(props, "audio.channels", "2");
-   //pw_properties_set(props, "audio.position", "FL,FR");
    pw_properties_set(props, "elvira.role", "instance");
-   if (config_group)
-      pw_properties_set(props, "elvira.group", config_group);
-   if (config_step)
-      pw_properties_set(props, "elvira.step", config_step);
+   pw_properties_set(props, "elvira.group", config_group);
+   pw_properties_set(props, "elvira.step", config_step);
    pw_properties_set(props, "elvira.plugin", config_plugin_uri);
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());
    pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
    pw_properties_set(props, "elvira.host.info.params", host_info_params());
-   //pw_properties_set(props, "elvira.autoconnect.audio", "true");
-   //pw_properties_set(props, "elvira.autoconnect.midi", "true");
+   pw_properties_set(props, "elvira.host.midi.params", host_midi_params());
    pw_properties_set(props, "elvira.gain", sgain);
    pw_properties_set(props, "elvira.pid", spid);
-
+   pw_properties_set(props, "elvira.plugin_name", host->plugin_name);
 
    node->filter = pw_filter_new_simple(pw_thread_loop_get_loop(runtime_primary_event_loop),
                                        config_nodename, props, &filter_events, node);

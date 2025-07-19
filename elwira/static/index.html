@@ -32,25 +32,11 @@
     }
   </style>
   <style>
-    #save-preset-popup {
-      display: none;
-      position: fixed;
-      top: 30%;
-      left: 40%;
-      background: #f0f0f0;
-      border: 1px solid #aaa;
-      padding: 20px;
-      z-index: 1000;
-    }
-    #new-instance-popup {
-      display: none;
-      position: fixed;
-      top: 30%;
-      left: 40%;
-      background: #f0f0f0;
-      border: 1px solid #aaa;
-      padding: 20px;
-      z-index: 1000;
+    dialog {
+      border: /* 1px solid #aaa*/ none;
+      border-radius: 8px;
+      padding: 1em;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -66,8 +52,60 @@
   <!-- ========================================================================================= -->
   <!-- Create new instance -->
   <!-- ========================================================================================= -->
-  <h2>New elvira instance</h2>
-  <select id="plugin-select"></select><br>
+  <!--h2>New elvira instance</h2>
+  <select id="plugin-select"></select><br-->
+
+  <!-- ========================================================================================= -->
+  <!-- New preset popup-->
+  <!-- ========================================================================================= -->
+  <dialog id="save-preset-popup">
+    <input type="text" id="save-preset-name" placeholder="Preset name" />
+    <br>
+    <button onclick="submit_save_preset()">Save</button>
+    <button onclick="cancel_save_preset()">Cancel</button>
+  </dialog>
+
+  <!-- ========================================================================================= -->
+  <!-- New instance popup-->
+  <!-- ========================================================================================= -->
+  <!--div id="new-instance-popup">
+    <input type="text" id="new-instance-name" placeholder="Instance name" />
+    <input type="checkbox" id="new-instance-showui" checked />
+    <label for="new-instance-showui">UI</label>
+    <button onclick="submit_new_instance()">Create</button>
+    <button onclick="cancel_new_instance()">Cancel</button>
+  </div-->
+
+  <!-- ========================================================================================= -->
+  <!-- Add Group popup-->
+  <!-- ========================================================================================= -->
+  <dialog id="add-group-popup">
+    <input type="text" id="add-group-name" placeholder="Group name" />
+    <br>
+    <select id="add-group-plugin"></select>
+    <br>
+    <input type="checkbox" id="add-group-showui" checked />
+    <label for="add-group-showui">UI</label>
+    <br>
+    <button onclick="add_group_ok()">Ok</button>
+    <button onclick="add_group_cancel()">Cancel</button>
+  </dialog>
+
+  <!-- ========================================================================================= -->
+  <!-- Add Step popup-->
+  <!-- ========================================================================================= -->
+  <dialog id="add-step-popup">
+    <input type="text" id="add-step-number" placeholder="Step number" />
+    <br>
+    <select id="add-step-plugin"></select>
+    <br>
+    <input type="checkbox" id="add-step-showui" checked />
+    <label for="add-step-showui">UI</label>
+    <br>
+    <button onclick="add_step_ok()">Ok</button>
+    <button onclick="add_step_cancel()">Cancel</button>
+  </dialog>
+
   <!-- ========================================================================================= -->
   <!-- elvira instances -->
   <!-- ========================================================================================= -->
@@ -75,7 +113,7 @@
   <table id="instance-table">
     <thead>
       <tr>
-        <th>group</th>
+        <th>group<br><button onclick="add_group_popup()">+</button></th>
         <th>step</th>
         <th>node id</th>
         <th>instance</th>
@@ -84,6 +122,7 @@
         <th>log</th>
         <th>controls</th>
         <th>params</th>
+        <th>midi</th>
         <th>volume</th>
       </tr>
     </thead>
@@ -91,26 +130,6 @@
       <!-- Rows will be inserted here -->
     </tbody>
   </table>
-
-  <!-- ========================================================================================= -->
-  <!-- New preset popup-->
-  <!-- ========================================================================================= -->
-  <div id="save-preset-popup">
-    <input type="text" id="save-preset-name" placeholder="Preset name" />
-    <button onclick="submit_save_preset()">Save</button>
-    <button onclick="cancel_save_preset()">Cancel</button>
-  </div>
-
-  <!-- ========================================================================================= -->
-  <!-- New instance popup-->
-  <!-- ========================================================================================= -->
-  <div id="new-instance-popup">
-    <input type="text" id="new-instance-name" placeholder="Instance name" />
-    <input type="checkbox" id="new-instance-showui" checked />
-    <label for="new-instance-showui">UI</label>
-    <button onclick="submit_new_instance()">Create</button>
-    <button onclick="cancel_new_instance()">Cancel</button>
-  </div>
 
   <!-- ========================================================================================= -->
   <!-- Script -->

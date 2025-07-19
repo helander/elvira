@@ -24,6 +24,7 @@
 #include "runtime.h"
 #include "set.h"
 #include "types.h"
+#include "util.h"
 
 /* ========================================================================== */
 /*                               Compilation conditions                       */
@@ -161,6 +162,7 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
          read_index += sizeof(uint16_t) + msg_len;
          spa_ringbuffer_read_update(&port->ring, read_index);
          LV2_Atom *atom = (LV2_Atom *)payload;
+         //util_print_atom(atom);
          if (ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >=
              sizeof(LV2_Atom_Event) + atom->size + sizeof(LV2_Atom)) {
             LV2_Atom_Event *aev =
@@ -169,7 +171,10 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
             aev->body.type = atom->type;
             aev->body.size = atom->size;
             memcpy(LV2_ATOM_BODY(&aev->body), &atom[1], atom->size);
-
+            if (aev->body.type == constants.midi_MidiEvent) {
+               pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_input_midi_event,
+                  port->host_port->index, LV2_ATOM_BODY(&aev->body), aev->body.size, false, NULL);
+            }
             int size = lv2_atom_pad_size(sizeof(LV2_Atom_Event) + atom->size);
             aseq->atom.size += size;
          }
@@ -212,6 +217,7 @@ void pre_run_control_input(Port *port, uint64_t frame, float denom, uint64_t n_s
             size_t midi_size = SPA_POD_BODY_SIZE(&c->value);
 #endif
             if (midi_data[0] == 0xf8) continue;
+            pw_log_debug("RECEIVED MIDI 	%02x %02x %02x",midi_data[0],midi_data[1],midi_data[2]);
             if (ATOM_PORT_BUFFER_SIZE - sizeof(LV2_Atom) - aseq->atom.size >= sizeof(LV2_Atom_Event) + midi_size) {
                LV2_Atom_Event *aev =
                    (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq) +
@@ -249,10 +255,13 @@ void pre_run_control_output(Port *port, uint64_t frame, float denom, uint64_t n_
 
 void post_run_control_output(Port *port, uint64_t n_samples) {
    LV2_Atom_Sequence *aseq = (LV2_Atom_Sequence *)port->host_port->buffer;
-   send_atom_sequence(port->host_port->index, aseq);
+   if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
+     //util_print_atom_sequence(port->host_port->index,aseq);
+     send_atom_sequence(port->host_port->index, aseq);
+   }
    LV2_Atom_Event *aev = (LV2_Atom_Event *)((char *)LV2_ATOM_CONTENTS(LV2_Atom_Sequence, aseq));
    if (aseq->atom.size > sizeof(LV2_Atom_Sequence)) {
-      struct spa_data *d;
+    struct spa_data *d;
       struct spa_pod_builder builder;
       struct spa_pod_frame frame;
       if (port->node_port->pwbuffer) {
@@ -265,12 +274,24 @@ void post_run_control_output(Port *port, uint64_t n_samples) {
          spa_pod_builder_init(&builder, d->data, d->maxsize);
          spa_pod_builder_push_sequence(&builder, &frame, 0);
       }
+      //util_print_atom_sequence(port->host_port->index,aseq);
       long payloadSize = aseq->atom.size;
       while (payloadSize > (long)sizeof(LV2_Atom_Event)) {
-         if (port->node_port->pwbuffer && aev->body.type == constants.midi_MidiEvent) {
+         if (aev->body.type == constants.midi_MidiEvent) {
             uint8_t *mididata = (uint8_t *)aev + sizeof(LV2_Atom_Event);
-            spa_pod_builder_control(&builder, 0, SPA_CONTROL_Midi);
-            spa_pod_builder_bytes(&builder, mididata, aev->body.size);
+            pw_loop_invoke(pw_thread_loop_get_loop(runtime_primary_event_loop), on_output_midi_event,
+                  port->host_port->index, mididata, aev->body.size, false, NULL);
+            if (port->node_port->pwbuffer) {
+#if USE_UMP
+               uint32_t event = 0x20000000 | (mididata[0] << 16) | (mididata[1] << 8) | mididata[2]; 
+
+               spa_pod_builder_control(&builder, 0, SPA_CONTROL_UMP);
+               spa_pod_builder_bytes(&builder, &event, sizeof(event));
+#else
+               spa_pod_builder_control(&builder, 0, SPA_CONTROL_Midi);+++
+               spa_pod_builder_bytes(&builder, mididata, aev->body.size);
+#endif
+            }
          }
          int eventSize =
              lv2_atom_pad_size(sizeof(LV2_Atom_Event)) + lv2_atom_pad_size(aev->body.size);
@@ -341,7 +362,7 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
    Port *port = find_port(port_index);
    if (protocol == 0U) {
       const float value = *(const float *)buffer;
-      pw_log_info("Write to control port %d value %f", port_index, value);
+      pw_log_debug("Write to control port %d value %f", port_index, value);
       HostPort *host_port = find_host_port(port_index);
       if (host_port == NULL) {
          pw_log_error("No host port found for index %d", port_index);
@@ -366,10 +387,10 @@ void ports_write(void *const controller, const uint32_t port_index, const uint32
       if (buffer_size < sizeof(LV2_Atom) || (sizeof(LV2_Atom) + atom->size != buffer_size)) {
          pw_log_error("Write to atom port %d canceled - wrong buffer size %d", port_index, buffer_size);
       } else {
-         pw_log_trace("[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
+         pw_log_debug("[%s]  Write to atom port %d - buffer size %d atom size %d  type %d %s",
                  config_nodename, port_index, buffer_size, atom->size, atom->type,
                  constants_unmap(constants, atom->type));
-
+         //util_print_atom(atom);
          uint16_t len = buffer_size;
          if (buffer_size > MAX_ATOM_MESSAGE_SIZE) {
             pw_log_error("Payload too large");
