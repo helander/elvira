@@ -1,0 +1,164 @@
+<!--
+   File:           midicc.html
+   Project:        elvira
+   Author:         Lars-Erik Helander <lehswel@gmail.com>
+   License:        MIT
+   Description:    Simple control page for midicc on plugins
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <!-- ========================================================================================= -->
+  <!-- Page header -->
+  <!-- ========================================================================================= -->
+<head>
+  <meta charset="UTF-8">
+  <title>midicc</title>
+  <style>
+     #sliders {                                                                                                                                                                          
+        display: flex;                                                                                                                                                                             
+        flex-direction: row;                                                                                                                                                                       
+        align-items: center;                                                                                                                                                                       
+     }
+  </style>
+</head>
+  <!-- ========================================================================================= -->
+  <!-- Page body -->
+  <!-- ========================================================================================= -->
+<body>
+  <h3 id="node-name"></h3>
+  <h4 id="plugin-uri"></h4>
+  <h4 id="plugin-name"></h4>
+  <!-- ========================================================================================= -->
+  <!-- Sliders -->
+  <!-- ========================================================================================= -->
+  <div id="sliders"></div>
+
+  <!-- ========================================================================================= -->
+  <!-- Script -->
+  <!-- ========================================================================================= -->
+  <!--script src="slider.js"></script-->
+  <script type="module">
+    import { SliderComponent } from './component.js';
+
+/*
+    const s1 = new SliderComponent();
+    s1.params = 
+    {
+      name: "Mode",
+      value: 2,
+      points: [{label:"Off", value:0}, {label:"Low",value: 28}, {label:"Med",value: 31}, {label:"Hi",value: 50}, {label:"Boost",value: 86}, {label:"Max",value:100}]
+    };
+    s1.addEventListener("slider-change", (event) => {
+       console.log('s1 value '+event.detail.value);
+    });
+    document.getElementById("sliders").appendChild(s1);
+*/
+
+    function send_value(value, cc) {
+      console.log('send_value',cc,value);
+      const baseUrl = "/metadata/"+nodeValue+"?key=midicc."+cc+"&value="+value;
+      console.log(baseUrl);
+      fetch(baseUrl);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const nodeValue = params.get('node');
+
+    const plugin_uri = document.querySelector('#plugin-uri');
+    const plugin_name = document.querySelector('#plugin-name');
+    const node_name = document.querySelector('#node-name');
+
+    const baseUrl = "/node-props/"+nodeValue+"?prefix=elvira.host.info.base&prefix=elvira.host.midi.params&prefix=node.name&prefix=elvira.midicc";
+    
+    const response = await fetch(baseUrl);
+    const data = await response.json();
+
+               console.log('id',data.id);
+               console.log('base',data.properties["elvira.host.info.base"]);
+               console.log('data',data.properties);
+               plugin_uri.innerHTML = data.properties["elvira.host.info.base"].uri;
+               plugin_name.innerHTML = data.properties["elvira.host.info.base"].name;
+               node_name.innerHTML = data.properties["node.name"];
+               const midiccs = data.properties["elvira.host.midi.params"];
+               console.log('midiccs',midiccs);
+               const container = document.getElementById('sliders');
+
+               for (let i = 0; i < midiccs.length; i++) {
+                  const midicc = midiccs[i];
+                  console.log('midicc '+i,midicc);
+
+                  const current = data.properties["elvira.midicc."+midicc.midicc];
+                  console.log('current',midicc.midicc,current);
+                  let midicc_min;
+                  if (midicc.min == null) {
+                     midicc_min = 0;
+                  } else {
+                     midicc_min = Number(midicc.min);
+                  }
+                  let midicc_max;
+                  if (midicc.max == null) {
+                     midicc_max = 127;
+                  } else {
+                     midicc_max = Number(midicc.max);
+                  }
+                  console.log('min',midicc_min);
+                  console.log('max',midicc_max);
+//                  let scale_length = midicc.scale.length;
+//                  if (scale_length == 0) {
+//                     input.step = 1
+//                  } else if (scale_length == 1) {
+//                     input.step = (input.max - input.min);
+//                  } else {
+//                     input.step = (input.max - input.min)/(scale_length - 1);
+//                  }
+//                  console.log('scalepoints',scale_length);
+//                  console.log('step',input.step);
+                  
+                  let midicc_value;
+                  if (current != null) {
+                    midicc_value = Number(current);
+                  } else {
+                    if (midicc.default != null) {
+                       midicc_value = Number(midicc.default);
+                    } else {
+                       midicc_value = 0;
+                    }
+                  }
+                  console.log('midicc_value',midicc_value);
+
+                  /*input.addEventListener('input', () => {
+                     valueDisplay.innerText = input.value;
+                     const baseUrl = "/metadata/"+nodeValue+"?key=midicc."+midicc.midicc+"&value="+input.value;
+                     console.log(baseUrl);
+                     fetch(baseUrl);
+                  });*/
+
+                  //createVerticalSlider(midicc.label,midicc_min,midicc_max,midicc.enum,midicc_value,midicc.scale, (val,ctx) => send_value(val,ctx ),midicc,container);
+
+                  const control = new SliderComponent();
+                  if (midicc.scale.length == 0) {
+                     control.params = {
+                       name: midicc.label,
+                       min: midicc_min,
+                       max: midicc_max,
+                       integer: true,
+                       value: midicc_value,
+                     };
+                  } else {
+                     control.params = {
+                       name: midicc.label,
+                       value: 0,
+                       points: midicc.scale,
+                     };
+                  }
+                  control.addEventListener("slider-change", (event) => {
+                    console.log(event.detail.name+' '+event.detail.value);
+                    send_value(event.detail.value, midicc.midicc);
+                  });
+                  container.appendChild(control);
+
+               }
+
+  </script>
+</body>
+</html>
