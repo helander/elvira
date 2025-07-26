@@ -47,7 +47,7 @@ function add_step(name, step, plugin, showui) {
 // Open control
 // =========================================================================================
 function openControl(node) {
-    const url = "/control-inputs.html?node="+node;
+    const url = "/controls.html?node="+node;
     const windowName = "control"+node;
     win = window.open(url, windowName);
 }

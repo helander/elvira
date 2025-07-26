@@ -388,7 +388,7 @@ char *host_info_params() {
 
             const LilvNode* label = lilv_world_get(constants.world, param, constants.rdfs_label, NULL);
             if (label) {
-                sprintf(info + strlen(info), ",\"label\":\"%s\"", lilv_node_as_string(label));
+                sprintf(info + strlen(info), ",\"name\":\"%s\"", lilv_node_as_string(label));
             }
 
             const LilvNode* default_val = lilv_world_get(constants.world, param, lv2_default, NULL);
@@ -488,7 +488,7 @@ char *host_midi_params() {
 
             const LilvNode* label = lilv_world_get(constants.world, param, constants.rdfs_label, NULL);
             if (label) {
-                sprintf(info + strlen(info), ",\"label\":\"%s\"", lilv_node_as_string(label));
+                sprintf(info + strlen(info), ",\"name\":\"%s\"", lilv_node_as_string(label));
             }
 
             const LilvNode* default_val = lilv_world_get(constants.world, param, lv2_default, NULL);

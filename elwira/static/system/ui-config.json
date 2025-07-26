@@ -1,0 +1,23 @@
+[
+  {
+    "type": "a",
+    "endpoint": "/api/users",
+    "view": "view-chart",
+    "name": "User Chart",
+    "prio": 10
+  },
+  {
+    "type": "a",
+    "endpoint": "/api/logs",
+    "view": "view-table",
+    "name": "Log Table",
+    "prio": 5
+  },
+  {
+    "type": "a",
+    "endpoint": "/api/stats",
+    "view": "view-chart",
+    "name": "Statistics",
+    "prio": 8
+  }
+]

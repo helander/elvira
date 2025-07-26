@@ -1,0 +1,4 @@
+go build
+sudo rm /usr/bin/elwira
+sudo cp elwira /usr/bin/elwira
+systemctl --user restart elwira

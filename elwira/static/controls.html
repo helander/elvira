@@ -102,6 +102,9 @@
                   this.control.addEventListener("component-change", (event) => {
                         this.send(node, index, event.detail.value);
                   });
+                  this.control.addEventListener("file-selected", (event) => {
+                        console.log('From component: file-selected', event);
+                  });
       }
 
     }
@@ -324,8 +327,8 @@
 
     const midicc_controls = await (new MidiCCs(node)).discovery();
     const input_controls = await (new InputControls(node)).discovery();
-    //const param_controls = await (new Parameters(node)).discovery();
-    const all_controls = midicc_controls.concat(input_controls/*, param_controls*/);
+    const param_controls = await (new ParameterControls(node)).discovery();
+    const all_controls = midicc_controls.concat(input_controls, param_controls);
     console.log('ALL',all_controls);
     const container = document.getElementById('controls');
 
