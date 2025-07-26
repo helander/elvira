@@ -14,7 +14,7 @@
   <meta charset="UTF-8">
   <title>midicc</title>
   <style>
-     #sliders {                                                                                                                                                                          
+     #controls {                                                                                                                                                                          
         display: flex;                                                                                                                                                                             
         flex-direction: row;                                                                                                                                                                       
         align-items: center;                                                                                                                                                                       
@@ -29,135 +29,214 @@
   <h4 id="plugin-uri"></h4>
   <h4 id="plugin-name"></h4>
   <!-- ========================================================================================= -->
-  <!-- Sliders -->
+  <!-- Controls -->
   <!-- ========================================================================================= -->
-  <div id="sliders"></div>
+  <div id="controls"></div>
 
   <!-- ========================================================================================= -->
   <!-- Script -->
   <!-- ========================================================================================= -->
-  <!--script src="slider.js"></script-->
   <script type="module">
-    import { SliderComponent } from './component.js';
-
-/*
-    const s1 = new SliderComponent();
-    s1.params = 
-    {
-      name: "Mode",
-      value: 2,
-      points: [{label:"Off", value:0}, {label:"Low",value: 28}, {label:"Med",value: 31}, {label:"Hi",value: 50}, {label:"Boost",value: 86}, {label:"Max",value:100}]
-    };
-    s1.addEventListener("slider-change", (event) => {
-       console.log('s1 value '+event.detail.value);
-    });
-    document.getElementById("sliders").appendChild(s1);
-*/
-
-    function send_value(value, cc) {
-      console.log('send_value',cc,value);
-      const baseUrl = "/metadata/"+nodeValue+"?key=midicc."+cc+"&value="+value;
-      console.log(baseUrl);
-      fetch(baseUrl);
-    }
+    import { SliderComponent } from './slider-component.js';
+    import { ButtonsComponent } from './buttons-component.js';
 
     const params = new URLSearchParams(window.location.search);
-    const nodeValue = params.get('node');
+    const node = params.get('node');
 
-    const plugin_uri = document.querySelector('#plugin-uri');
-    const plugin_name = document.querySelector('#plugin-name');
-    const node_name = document.querySelector('#node-name');
 
-    const baseUrl = "/node-props/"+nodeValue+"?prefix=elvira.host.info.base&prefix=elvira.host.midi.params&prefix=node.name&prefix=elvira.midicc";
+    class InfoBase {
+      constructor(node) {
+         this.node = node;
+         this.plugin_uri = document.querySelector('#plugin-uri');
+         this.plugin_name = document.querySelector('#plugin-name');
+         this.node_name = document.querySelector('#node-name');
+      }
+
+      async init() {
+         const serviceUrl = "/node-props/"+this.node+"?prefix=elvira.host.info.base";
     
-    const response = await fetch(baseUrl);
-    const data = await response.json();
+         const response = await fetch(serviceUrl);
+         const data = await response.json();
 
-               console.log('id',data.id);
-               console.log('base',data.properties["elvira.host.info.base"]);
-               console.log('data',data.properties);
-               plugin_uri.innerHTML = data.properties["elvira.host.info.base"].uri;
-               plugin_name.innerHTML = data.properties["elvira.host.info.base"].name;
-               node_name.innerHTML = data.properties["node.name"];
-               const midiccs = data.properties["elvira.host.midi.params"];
-               console.log('midiccs',midiccs);
-               const container = document.getElementById('sliders');
+         this.plugin_uri.innerHTML = data.properties["elvira.host.info.base"].uri;
+         this.plugin_name.innerHTML = data.properties["elvira.host.info.base"].name;
+         this.node_name.innerHTML = data.properties["node.name"];
+      }
+    }
 
-               for (let i = 0; i < midiccs.length; i++) {
-                  const midicc = midiccs[i];
-                  console.log('midicc '+i,midicc);
-
-                  const current = data.properties["elvira.midicc."+midicc.midicc];
-                  console.log('current',midicc.midicc,current);
-                  let midicc_min;
-                  if (midicc.min == null) {
-                     midicc_min = 0;
-                  } else {
-                     midicc_min = Number(midicc.min);
-                  }
-                  let midicc_max;
-                  if (midicc.max == null) {
-                     midicc_max = 127;
-                  } else {
-                     midicc_max = Number(midicc.max);
-                  }
-                  console.log('min',midicc_min);
-                  console.log('max',midicc_max);
-//                  let scale_length = midicc.scale.length;
-//                  if (scale_length == 0) {
-//                     input.step = 1
-//                  } else if (scale_length == 1) {
-//                     input.step = (input.max - input.min);
-//                  } else {
-//                     input.step = (input.max - input.min)/(scale_length - 1);
-//                  }
-//                  console.log('scalepoints',scale_length);
-//                  console.log('step',input.step);
-                  
-                  let midicc_value;
-                  if (current != null) {
-                    midicc_value = Number(current);
-                  } else {
-                    if (midicc.default != null) {
-                       midicc_value = Number(midicc.default);
-                    } else {
-                       midicc_value = 0;
-                    }
-                  }
-                  console.log('midicc_value',midicc_value);
-
-                  /*input.addEventListener('input', () => {
-                     valueDisplay.innerText = input.value;
-                     const baseUrl = "/metadata/"+nodeValue+"?key=midicc."+midicc.midicc+"&value="+input.value;
-                     console.log(baseUrl);
-                     fetch(baseUrl);
-                  });*/
-
-                  //createVerticalSlider(midicc.label,midicc_min,midicc_max,midicc.enum,midicc_value,midicc.scale, (val,ctx) => send_value(val,ctx ),midicc,container);
-
-                  const control = new SliderComponent();
-                  if (midicc.scale.length == 0) {
+    class MidiCC {
+      constructor(node,midicc,info) {
+                  this.prio = info.prio;
+                  let value = info.default == null ? 0 : Number(info.default);
+                  value = info.current == null ? value : Number(info.current);
+                  if (info.toggle||info.enum) {
+                     const control = new ButtonsComponent();
                      control.params = {
-                       name: midicc.label,
-                       min: midicc_min,
-                       max: midicc_max,
+                       name: info.label,
+                       pos: 0,
+                       points: info.scale,
+                       prio: info.prio,
+                       context: {node: node, midicc: midicc},
+                     };
+                     this.control = control;
+                  } else {
+                     const control = new SliderComponent();
+                     control.params = {
+                       name: info.label,
+                       min: info.min == null ? 0 : Number(info.min),
+                       max: info.max == null ? 127 : Number(info.max),
                        integer: true,
-                       value: midicc_value,
+                       value: value,
+                       prio: info.prio,
+                       context: {node: node, midicc: midicc},
                      };
-                  } else {
-                     control.params = {
-                       name: midicc.label,
-                       value: 0,
-                       points: midicc.scale,
-                     };
-                  }
-                  control.addEventListener("slider-change", (event) => {
-                    console.log(event.detail.name+' '+event.detail.value);
-                    send_value(event.detail.value, midicc.midicc);
+                     this.control = control;
+                  } 
+                  this.control.addEventListener("component-change", (event) => {
+                        this.send(node, midicc, event.detail.value);
                   });
-                  container.appendChild(control);
+      }
 
-               }
+      send(node, midicc, value) {
+         const serviceUrl = "/metadata/"+node+"?key=midicc."+midicc+"&value="+value;
+         console.log(serviceUrl);
+         fetch(serviceUrl);
+      }
+    }
+
+    class MidiCCs {
+       constructor(node) {
+         this.node = node;
+       }
+
+       async discovery() {
+          const serviceUrl = "/node-props/"+this.node+"?prefix=elvira.host.midi.params&prefix=node.name&prefix=elvira.midicc";
+    
+          const response = await fetch(serviceUrl);
+          const data = await response.json();
+
+          const items = data.properties["elvira.host.midi.params"];
+
+          let result = [];
+          for (let i = 0; i < items.length; i++) {
+                  const item = items[i];
+                  const current = data.properties["elvira.midicc."+item.midicc];
+                  const info = {
+                    label: item.label,
+                    prio: item.prio,
+                    min: item.min,
+                    max: item.max,
+                    enum: item.enum,
+                    toggle: item.toggle,
+                    scale: item.scale,
+                    default: item.default,
+                    current: current
+                  }
+                  const obj = new MidiCC(this.node, item.midicc, info);
+                  result.push(obj);
+          }       
+          return result;   
+       }      
+    }
+
+    class InputControl {
+      constructor(node,index,info) {
+                  this.prio = info.prio;
+                  let value = info.default == null ? 0 : Number(info.default);
+                  value = info.current == null ? value : Number(info.current);
+                  if (info.toggle||info.enum) {
+                     const control = new ButtonsComponent();
+                     control.params = {
+                       name: info.label,
+                       pos: 0,
+                       points: info.scale,
+                       prio: info.prio,
+                       //context: {node: node, index: index},
+                     };
+                     this.control = control;
+                  } else {
+                     const control = new SliderComponent();
+                     control.params = {
+                       name: info.label,
+                       min: info.min == null ? 0 : Number(info.min),
+                       max: info.max == null ? 127 : Number(info.max),
+                       integer: true,
+                       value: value,
+                       prio: info.prio,
+                       //context: {node: node, index: index},
+                     };
+                     this.control = control;
+                  } 
+                  this.control.addEventListener("component-change", (event) => {
+                        this.send(node, index, event.detail.value);
+                  });
+      }
+      send(node, index, value) {
+         const serviceUrl = "/metadata/"+node+"?key=control.i."+index+"&value="+value;
+         console.log(serviceUrl);
+         fetch(serviceUrl);
+      }
+    }
+
+    class InputControls {
+       constructor(node) {
+         this.node = node;
+       }
+
+       async discovery() {
+          const serviceUrl = "/node-props/"+this.node+"?prefix=elvira.host.info.ports&prefix=node.name&prefix=elvira.control.in.";
+    
+          const response = await fetch(serviceUrl);
+          const data = await response.json();
+
+          const items = data.properties["elvira.host.info.ports"];
+
+          let result = [];
+          for (let i = 0; i < items.length; i++) {
+                  const item = items[i];
+                  if (!item.input) continue;
+                  if (!item.control) continue;
+                  const current = data.properties["elvira.control.in.."+i];
+                  const info = {
+                    label: item.label,
+                    prio: item.prio,
+                    min: item.min,
+                    max: item.max,
+                    enum: item.enum,
+                    toggle: item.toggle,
+                    scale: item.scale,
+                    default: item.default,
+                    current: current
+                  }
+                  const obj = new InputControl(this.node, i, info);
+                  result.push(obj);
+          }       
+          return result;   
+       }      
+    }
+  
+
+    new InfoBase(node).init();
+
+    const midicc_controls = await (new MidiCCs(node)).discovery();
+    const input_controls = await (new InputControls(node)).discovery();
+    //const param_controls = await (new Parameters(node)).discovery();
+    const all_controls = midicc_controls.concat(input_controls/*, param_controls*/);
+    console.log('ALL',all_controls);
+    const container = document.getElementById('controls');
+
+    all_controls.sort((a, b) => b.prio - a.prio);
+
+    let skipZeroPrio = false;
+    if (all_controls.length) {
+           if (all_controls[0].prio > 0.5) {skipZeroPrio = true}
+    }
+
+    for (let i = 0; i < all_controls.length; i++) {
+      //if (skipZeroPrio && all_controls[i].prio < 0.5) continue;
+      container.appendChild(all_controls[i].control);
+    }
+
 
   </script>
 </body>

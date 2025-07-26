@@ -320,6 +320,15 @@ char *host_info_ports() {
             sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
          }
       }
+      if (lilv_port_is_a(p, port, lilv_new_uri(constants.world, LILV_URI_CONTROL_PORT))) {
+         const LilvNode *pp_display_priority  = lilv_new_uri(constants.world, "http://lv2plug.in/ns/ext/port-props#displayPriority");
+         LilvNode *prio_val = lilv_port_get(p, port, pp_display_priority);
+         if (prio_val) {
+            sprintf(info + strlen(info), ",\"prio\":%f", lilv_node_as_float(prio_val));
+         } else {
+            sprintf(info + strlen(info), ",\"prio\":0");
+         }
+      }
 
       LilvScalePoints *points = lilv_port_get_scale_points(p, port);
       if (points) {
@@ -356,6 +365,7 @@ char *host_info_params() {
     const LilvNode *lv2_default = lilv_new_uri(constants.world, LILV_NS_LV2 "default");
     const LilvNode *lv2_min = lilv_new_uri(constants.world, LILV_NS_LV2 "minimum");
     const LilvNode *lv2_max = lilv_new_uri(constants.world, LILV_NS_LV2 "maximum");
+    const LilvNode *pp_display_priority  = lilv_new_uri(constants.world, "http://lv2plug.in/ns/ext/port-props#displayPriority");
 
     const LilvNode* patch_writable = lilv_new_uri(constants.world, LV2_PATCH__writable);
     const LilvNodes* writable_nodes = lilv_plugin_get_value(p, patch_writable);
@@ -394,6 +404,13 @@ char *host_info_params() {
             const LilvNode* max_val = lilv_world_get(constants.world, param, lv2_max, NULL);
             if (max_val) {
                sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
+            }
+
+            const LilvNode* prio_val = lilv_world_get(constants.world, param, pp_display_priority, NULL);
+            if (prio_val) {
+               sprintf(info + strlen(info), ",\"prio\":%f", lilv_node_as_float(prio_val));
+            } else {
+               sprintf(info + strlen(info), ",\"prio\":0");
             }
 
             LilvNode* sp_pred = lilv_new_uri(constants.world, LILV_NS_LV2 "scalePoint");
@@ -449,6 +466,7 @@ char *host_midi_params() {
     const LilvNode *lv2_toggle = lilv_new_uri(constants.world, LILV_NS_LV2 "toggle");
     const LilvNode *lv2_enumeration = lilv_new_uri(constants.world, LILV_NS_LV2 "enumeration");
     const LilvNode *lv2_portProperty = lilv_new_uri(constants.world, LILV_NS_LV2 "portProperty");
+    const LilvNode *pp_display_priority  = lilv_new_uri(constants.world, "http://lv2plug.in/ns/ext/port-props#displayPriority");
     const LilvNode* midi_cc = lilv_new_uri(constants.world, "http://helander.network/lv2/elvira#midiCC");
 
     const LilvNode* midi_params = lilv_new_uri(constants.world, "http://helander.network/lv2/elvira#midi_params");
@@ -486,6 +504,13 @@ char *host_midi_params() {
             const LilvNode* max_val = lilv_world_get(constants.world, param, lv2_max, NULL);
             if (max_val) {
                sprintf(info + strlen(info), ",\"max\":%f", lilv_node_as_float(max_val));
+            }
+
+            const LilvNode* prio_val = lilv_world_get(constants.world, param, pp_display_priority, NULL);
+            if (prio_val) {
+               sprintf(info + strlen(info), ",\"prio\":%f", lilv_node_as_float(prio_val));
+            } else {
+               sprintf(info + strlen(info), ",\"prio\":0");
             }
 
             const bool enumeration = lilv_world_ask(constants.world, param, lv2_portProperty, lv2_enumeration);
