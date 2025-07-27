@@ -6,6 +6,7 @@
   <script type="module" src="./components/elvira-control.js"></script>
   <script type="module" src="./components/elvira-slider.js"></script>
   <script type="module" src="./components/elvira-select.js"></script>
+  <script type="module" src="./components/elvira-filepath.js"></script>
   <script type="module" src="./components/elvira-target-midicc.js"></script>
   <!--script type="module" src="./main.js"></script-->
   <style>
@@ -21,6 +22,10 @@
   <div id="dynamic-container" class="control-container"></div-->
   <h1>Elvira static controls</h1>
   <div id="static-container" class="control-container">
+    <elvira-control>
+       <elvira-target-midicc midicc="200"></elvira-target-midicc>
+       <elvira-filepath name="Soundfont"></elvira-filepath>
+    </elvira-control>
     <elvira-control>
        <elvira-target-midicc midicc="7"></elvira-target-midicc>
        <elvira-slider name="Volume" max="127" min="0" value="49" integer>

@@ -24,32 +24,12 @@ export class ElviraSlider extends ViewComponent {
   }
 
   onTemplateLoaded() {
-    //let x;
-    //if (x = this.getAttribute("max")) {this.params.max = x;}
-    //if (x = this.getAttribute("min")) {this.params.min = x;}
-    //if (x = this.getAttribute("value")) {this.params.value = x;}
-    //if (this.getAttribute("integer") == null) {this.params.integer = false;}
-    //if (x = this.getAttribute("prio")) {this.params.prio = x;}
-    //if (x = this.getAttribute("name")) {this.params.name = x;}
-    //console.log('integer',this.getAttribute("integer"));
     console.log('Params', this.params);
     this.shadowRoot.appendChild(this.createComponent(this.params));
   }
 
 
   createComponent(params) {
-/*
-      const options = this.querySelectorAll("option");
-      console.log('options',options);
-      if (options.length > 0) {
-        options.forEach(function (option, index) {
-	   console.log('pos',index); // index
-	   console.log('label',option.textContent); // value
-	   console.log('value',option.value); // value
-           params.points.push({pos: index, label: option.textContent, value: option.value});
-        });
-      }
-*/
       const usePoints = Array.isArray(params.points) && params.points.length > 0;
       
       if (usePoints) {
@@ -84,7 +64,6 @@ export class ElviraSlider extends ViewComponent {
       let dragging = false;
       let trackRect = null;
 
-      //let me = this;
       // Convert value to top position, but invert so max = top=0, min=bottom=sliderHeight
       function valueToTop(val) {
         return (params.max - val) * stepHeight;
@@ -108,10 +87,6 @@ export class ElviraSlider extends ViewComponent {
              slider_state = { name: params.name, value: val};
         }
         component.dispatchEvent(new CustomEvent("component-change", {detail: slider_state, bubbles: true, composed: true} ));
-        //me.data_component.dispatchEvent(new CustomEvent("component-change", {detail: slider_state, bubbles: false, composed: false} ));
-        //console.log('elvira-slider change');
-        //console.log('emit',me);
-        //me.data_component.send(slider_state);
       }
 
       function updateFromPosition(clientY) {
@@ -157,8 +132,12 @@ export class ElviraSlider extends ViewComponent {
         updateFromPosition(e.clientY);
       });
 
-      setValue(params.value,this);
+      setValue(params.value);
       return component;
+    }
+
+    update(info) {
+      console.warn('elvira-slider update',info);
     }
 }
 

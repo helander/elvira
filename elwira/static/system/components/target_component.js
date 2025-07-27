@@ -1,12 +1,15 @@
-// taget_component.js
+// target_component.js
 
 export class TargetComponent extends HTMLElement {
   constructor() {
     super();
-    this.component_role = 'target';
+    //this.component_role = 'target';
+    //console.error('constructor '+this.tagName);
   }
 
  async connectedCallback() {
+    this.classList.add('target');;
+    //console.error('connectedCallback begin '+this.tagName);
      this.elvira_node = this.getAttribute("node");
      if (this.elvira_node === null) {
        const found = this.findAncestorAttribute('node');
@@ -23,6 +26,7 @@ export class TargetComponent extends HTMLElement {
        }
      }
      this.onStart();
+    //console.error('connectedCallback end '+this.tagName);
   }
 
   // Optionally overridden in child classes

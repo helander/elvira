@@ -13,18 +13,16 @@ export class ElviraTargetMidicc extends TargetComponent {
     this.midicc = this.getAttribute("midicc");
    }
 
-  fetch() {
-    setTimeout(() => {
-      const fakeData = {
-        endpoint: this.endpoint,
-        values: [5, 10, 15, 20]
-      };
-      this.dispatchEvent(new CustomEvent('target-change', {
-        detail: fakeData,
+  async fromTarget() {
+     const serviceUrl = "/node-props/"+this.elvira_node+"?prefix=elvira.midicc";
+     const response = await fetch(serviceUrl);
+     const data = await response.json();
+     const current = data.properties["elvira.midicc."+this.midicc];
+     this.dispatchEvent(new CustomEvent('target-change', {
+        detail: {value: current},
         bubbles: true,
         composed: true
-      }));
-    }, 500);
+     }));
   }
 
   update(info) {
@@ -40,5 +38,7 @@ export class ElviraTargetMidicc extends TargetComponent {
 }
 
 customElements.define('elvira-target-midicc', ElviraTargetMidicc);
+
+
 
 

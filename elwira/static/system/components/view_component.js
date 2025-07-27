@@ -6,11 +6,14 @@ export class ViewComponent extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._templateUrl = templateUrl;
-    this.component_role = 'view';
+    //this.component_role = 'view';
     this.params = {};
+    //console.error('construct '+this.tagName);
   }
 
   async connectedCallback() {
+    this.classList.add('view');
+    //console.error('connectedCallback begin '+this.tagName);
     const template = await loadTemplate(this._templateUrl);
     this.shadowRoot.appendChild(template.content.cloneNode(true));
     let x;
@@ -30,9 +33,14 @@ export class ViewComponent extends HTMLElement {
     }
 
     this.onTemplateLoaded();
+    //console.error('connectedCallback end '+this.tagName);
+
   }
 
   // Optionally overridden in child classes
   onTemplateLoaded() {}
 
+  update(info) {
+      console.error('Missing update method in view sub class');
+  }
 }

@@ -75,6 +75,10 @@ export class ElviraSelect extends ViewComponent {
       });
   }
 
+  update(info) {
+      console.warn('elvira-slider update',info);
+  }
+
 }
 
 customElements.define('elvira-select', ElviraSelect);
