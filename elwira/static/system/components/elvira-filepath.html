@@ -38,13 +38,21 @@
       text-overflow: ellipsis;
     }
 
+    .component-surface {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: var(--surface-height,300px);
+      position: relative;
+      margin: 0px;
+    }
 
    </style>
 
    <!-- Component inner structure -->
    <div class="component">
        <div class="component-value"></div>
-       <div class="file-selector-wrapper"> <!-- Is this needed, the class is not referenced anywhere ? -->
+       <div class="component-surface">
           <file-selector-dialog id="selector"></file-selector-dialog>
        </div>
        <div class="component-name"></div>

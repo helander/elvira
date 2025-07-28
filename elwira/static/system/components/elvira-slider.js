@@ -58,7 +58,8 @@ export class ElviraSlider extends ViewComponent {
 
       nameDisplay.textContent = this.params.name;
 
-      const sliderHeight = 300;
+      const sliderHeight = track.offsetHeight;
+      //const sliderHeight = 300;
       const steps = params.max - params.min;
       const stepHeight = sliderHeight / steps;
       this.stepheight = stepHeight;
