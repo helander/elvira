@@ -19,7 +19,11 @@ export class ElviraFilepath extends ViewComponent {
     //const valueDisplay = this.shadowRoot.querySelector(".component-value");
     const nameDisplay = this.shadowRoot.querySelector(".component-name");
     nameDisplay.textContent = this.params.name;
-    //this.reportState();
+    this.addEventListener('file-selected', event => {
+       console.log('filesel',event.detail);
+       const filename = this.shadowRoot.querySelector("#filename");
+       filename.innerHTML = shortenFilePath(event.detail.path).split('').map(c => `<span>${c}</span>`).join('');
+    });
   }
 
 /*
@@ -29,10 +33,23 @@ export class ElviraFilepath extends ViewComponent {
 */
 
  update(info) {
-      console.warn('elvira-filepath update',info);
+    console.warn('elvira-filepath update',info);
  }
 
 }
 
+
+function shortenFilePath(path) {
+  // Get the file name (after last slash)
+  const fileName = path.split('/').pop();
+
+  // Remove the extension (after last dot)
+  const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+
+  return baseName;
+}
+
 customElements.define('elvira-filepath', ElviraFilepath);
+
+
 

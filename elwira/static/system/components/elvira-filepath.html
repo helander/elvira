@@ -47,6 +47,18 @@
       margin: 0px;
     }
 
+    .stacked-text {
+      height: 100%;
+      overflow: hidden;
+      line-height: 1;
+      font-size: 11px;
+    }
+    .stacked-text span {
+      display: block;
+      text-align: center;
+      font-weight: bold;
+    }
+
    </style>
 
    <!-- Component inner structure -->
@@ -54,6 +66,9 @@
        <div class="component-value"></div>
        <div class="component-surface">
           <file-selector-dialog id="selector"></file-selector-dialog>
+          <div class="stacked-text" id="filename">
+              <!-- JS inserts one span per character -->
+          </div>
        </div>
        <div class="component-name"></div>
    </div>
