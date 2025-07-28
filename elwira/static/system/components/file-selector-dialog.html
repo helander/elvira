@@ -1,0 +1,39 @@
+
+      <style>
+        #modal {
+          display: none;
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.5);
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          pointer-events: none; /* Prevent interaction when closed */
+        }
+        #modal[open] {
+          display: flex;
+          pointer-events: auto; /* Reactivate pointer when visible */
+        }
+        .dialog {
+          background: white;
+          padding: 1rem;
+          border-radius: 6px;
+          min-width: 350px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        footer {
+          text-align: right;
+          margin-top: 1rem;
+        }
+      </style>
+      <button id="open-dialog">File</button>
+      <div id="modal">
+        <div class="dialog">
+          <file-path-input></file-path-input>
+          <footer>
+            <button id="cancel">Cancel</button>
+            <button id="ok">OK</button>
+          </footer>
+        </div>
+      </div>
+      <file-browser-dialog></file-browser-dialog>

@@ -1,6 +1,6 @@
 import { TargetComponent } from './target_component.js';
 
-export class ElviraTargetMidicc extends TargetComponent {
+export class ElviraTargetControl extends TargetComponent {
   constructor() {
     super();
     this.params = {
@@ -8,12 +8,12 @@ export class ElviraTargetMidicc extends TargetComponent {
   }
 
   async onStart() {
-    //console.log('elvira-data-midicc node',this.elvira_node);
+    //console.log('elvira-target-control node',this.elvira_node);
     this.index = this.getAttribute("index");
-     const serviceUrl = "/node-props/"+this.elvira_node+"?prefix=elvira.midicc";
+     const serviceUrl = "/node-props/"+this.elvira_node+"?prefix=elvira.control.in";
      const response = await fetch(serviceUrl);
      const data = await response.json();
-     const current = data.properties["elvira.midicc."+this.index];
+     const current = data.properties["elvira.control.in."+this.index];
      //console.log('current',current);
      this.dispatchEvent(new CustomEvent('target-change', {
         detail: {value: current},
@@ -23,15 +23,15 @@ export class ElviraTargetMidicc extends TargetComponent {
   }
 
   async update(info) {
-     //console.log('midicc update target',info);
+     //console.log('control update target',info);
      if (this.index != null) {
-       const serviceUrl = "/metadata/"+this.elvira_node+"?key=midicc."+this.index+"&value="+info.value;
+       const serviceUrl = "/metadata/"+this.elvira_node+"?key=control.in."+this.index+"&value="+info.value;
        //console.log(serviceUrl);
        const response = await fetch(serviceUrl);
      } else {
-        console.error("Missing index attribute in <elvira-target-midicc>");
+        console.error("Missing index attribute in <elvira-target-control>");
      }
   }
 }
 
-customElements.define('elvira-target-midicc', ElviraTargetMidicc);
+customElements.define('elvira-target-control', ElviraTargetControl);

@@ -52,7 +52,11 @@ export class TargetComponent extends HTMLElement {
       return null; // Attribute not found
   }
 
-  update() {
-    console.error('No update method defined in subclass');
+  writeTarget() {
+    console.error('No writeTarget method defined in subclass');
+  }
+
+  async readTarget() {
+    console.error('No readTarget method defined in subclass');
   }
 }

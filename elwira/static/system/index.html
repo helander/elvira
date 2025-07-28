@@ -8,6 +8,7 @@
   <script type="module" src="./components/elvira-select.js"></script>
   <script type="module" src="./components/elvira-filepath.js"></script>
   <script type="module" src="./components/elvira-target-midicc.js"></script>
+  <script type="module" src="./components/elvira-target-control.js"></script>
   <!--script type="module" src="./main.js"></script-->
   <style>
     .control-container {
@@ -22,21 +23,21 @@
   <div id="dynamic-container" class="control-container"></div-->
   <h1>Elvira static controls</h1>
   <div id="static-container" class="control-container">
-    <elvira-control>
-       <elvira-target-midicc midicc="200"></elvira-target-midicc>
+    <!--elvira-control>
+       <elvira-target-midicc index="200"></elvira-target-midicc>
        <elvira-filepath name="Soundfont"></elvira-filepath>
-    </elvira-control>
-    <elvira-control>
-       <elvira-target-midicc midicc="7"></elvira-target-midicc>
-       <elvira-slider name="Volume" max="127" min="0" value="49" integer>
+    </elvira-control-->
+    <elvira-control node="65">
+       <elvira-target-control index="4"></elvira-target-control>
+       <elvira-slider name="Level" max="207" min="-80" integer>
        </elvira-slider>
     </elvira-control>
     <elvira-control>
-       <elvira-target-midicc midicc="93"></elvira-target-midicc>
+       <elvira-target-midicc index="1"></elvira-target-midicc>
        <elvira-select name="Steps" pos="1" >
-         <option value="8">On</option>
-         <option value="7">Maybe</option>
-         <option value="12">Off</option>
+         <option value="0">Chorale</option>
+         <option value="64">Off</option>
+         <option value="127">Tremolo</option>
        </elvira-select>
     </elvira-control>
   </div>

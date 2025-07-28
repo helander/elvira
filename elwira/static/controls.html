@@ -235,7 +235,7 @@
       */
 
       send(node, index, value) {
-         const serviceUrl = "/metadata/"+node+"?key=control.i."+index+"&value="+value;
+         const serviceUrl = "/metadata/"+node+"?key=control.in."+index+"&value="+value;
          console.log(serviceUrl);
          fetch(serviceUrl);
       }
@@ -259,7 +259,7 @@
                   const item = items[i];
                   if (!item.input) continue;
                   if (!item.control) continue;
-                  const current = data.properties["elvira.control.in.."+i];
+                  const current = data.properties["elvira.control.in."+i];
                   const info = {
                     name: item.name,
                     prio: item.prio,
@@ -284,7 +284,7 @@
       }
 
       send(node, index, value) {
-         const serviceUrl = "/metadata/"+node+"?key=control.i."+index+"&value="+value;
+         const serviceUrl = "/metadata/"+node+"?key=control.in."+index+"&value="+value;
          console.log(serviceUrl);
          //fetch(serviceUrl);
       }

@@ -10,9 +10,7 @@ TODO: make current available semantics selectable via attributes
 
 
 export class ElviraSlider extends ViewComponent {
-  constructor() {
-    super('./components/elvira-slider.html');
-    this.params = {
+  params = {
       prio: 0,
       max: 100,
       min: 0,
@@ -20,11 +18,13 @@ export class ElviraSlider extends ViewComponent {
       name: 'anonymous',
       value: 37,
       points: [],
-    }
+  }
+  constructor() {
+    super('./components/elvira-slider.html');
   }
 
   onTemplateLoaded() {
-    console.log('Params', this.params);
+    //console.log('Params', this.params);
     this.shadowRoot.appendChild(this.createComponent(this.params));
   }
 
@@ -37,7 +37,7 @@ export class ElviraSlider extends ViewComponent {
         params.max = params.points.length - 1;
         params.value = Math.max(params.min, Math.min(params.max, Math.round(params.value)));
       }
-      let slider_state = {};
+      //let slider_state = {};
 
       // Lookup elements in the shadow tree (Defined in the template)
       const component = this.shadowRoot.querySelector(".component");
@@ -61,6 +61,7 @@ export class ElviraSlider extends ViewComponent {
       const sliderHeight = 300;
       const steps = params.max - params.min;
       const stepHeight = sliderHeight / steps;
+      this.stepheight = stepHeight;
       let dragging = false;
       let trackRect = null;
 
@@ -81,12 +82,13 @@ export class ElviraSlider extends ViewComponent {
         thumb.style.top = `${top}px`;
         if (params.integer) val = Math.round(val);        
         valueDisplay.textContent = usePoints ? params.points[val].label : (Number.isInteger(val) ? val.toString() : val.toFixed(2));
+        let state;
         if (usePoints) {
-             slider_state = { name: params.name, pos: val, value: params.points[val].value, label: params.points[val].label};
+             state = { name: params.name, pos: val, value: params.points[val].value, label: params.points[val].label};
         } else {
-             slider_state = { name: params.name, value: val};
+             state = { name: params.name, value: val};
         }
-        component.dispatchEvent(new CustomEvent("component-change", {detail: slider_state, bubbles: true, composed: true} ));
+        component.dispatchEvent(new CustomEvent("view-change", {detail: state, bubbles: true, composed: true} ));
       }
 
       function updateFromPosition(clientY) {
@@ -138,6 +140,25 @@ export class ElviraSlider extends ViewComponent {
 
     update(info) {
       console.warn('elvira-slider update',info);
+      const usePoints = Array.isArray(this.params.points) && this.params.points.length > 0;
+      const thumb = this.shadowRoot.querySelector(".slider-thumb");
+      const valueDisplay = this.shadowRoot.querySelector(".component-value");
+      const component = this.shadowRoot.querySelector(".component");
+
+
+        let val = Math.max(this.params.min, Math.min(this.params.max, usePoints ? Math.round(info.value) : info.value));
+        const top = (this.params.max - val) * this.stepheight;
+        thumb.style.top = `${top}px`;
+        if (this.params.integer) val = Math.round(val);
+        valueDisplay.textContent = usePoints ? this.params.points[val].label : (Number.isInteger(val) ? val.toString() : val.toFixed(2));
+        let state;
+        if (usePoints) {
+             state = { name: this.params.name, pos: val, value: this.params.points[val].value, label: this.params.points[val].label};
+        } else {
+             state = { name: this.params.name, value: val};
+        }
+        component.dispatchEvent(new CustomEvent("view-change", {detail: state, bubbles: true, composed: true} ));
+
     }
 }
 

@@ -1,0 +1,70 @@
+<style>
+    :host {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    :host([visible]) {
+      display: flex;
+    }
+    .dialog {
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      min-width: 320px;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+    li {
+      padding: 0.4rem 0.5rem;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    li:hover {
+      background-color: #f0f0f0;
+    }
+    li.selected {
+      background-color: #d0e0ff;
+    }
+    li.folder::after {
+      content: "📁";
+      margin-left: 0.5rem;
+    }
+    li.file::after {
+      content: "📄";
+      margin-left: 0.5rem;
+    }
+    footer {
+      text-align: right;
+      margin-top: 1rem;
+    }
+    button {
+      margin-left: 0.5rem;
+    }
+</style>
+<div class="dialog">
+    <h3>Select a file or folder</h3>
+    <div><strong id="current-path">/</strong></div>
+    <ul id="file-list"></ul>
+    <footer>
+      <button id="cancel">Cancel</button>
+      <button id="ok" disabled>OK</button>
+    </footer>
+</div>
