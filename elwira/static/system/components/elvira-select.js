@@ -16,10 +16,10 @@ export class ElviraSelect extends ViewComponent {
     this.component_state = {};
   }
 
-  onTemplateLoaded() {
+  onStart() {
     let pos;
     if (pos = this.getAttribute("pos")) {this.params.pos = pos;}
-    console.log('Params', this.params);
+    //console.log('Params', this.params);
     this.component = this.shadowRoot.querySelector(".component");
     this.createComponent(this.params);
     this.shadowRoot.appendChild(this.component);
@@ -27,7 +27,13 @@ export class ElviraSelect extends ViewComponent {
   }
 
   reportState() {
-     this.component.dispatchEvent(new CustomEvent("view-change", {detail: this.component_state, bubbles: true, composed: true} ));
+
+  Promise.resolve().then(() => {
+    requestAnimationFrame(() => {
+      this.component.dispatchEvent(new CustomEvent("view-change", {detail: this.component_state, bubbles: true, composed: true} ));
+    });
+  });
+
   }
 
   createComponent(params) {

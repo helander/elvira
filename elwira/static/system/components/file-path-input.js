@@ -1,6 +1,6 @@
-import { ViewComponent } from './view_component.js';
+import { TemplateComponent } from './template_component.js';
 
-export class FilePathInput extends ViewComponent {
+export class FilePathInput extends TemplateComponent {
   constructor() {
     super('./components/file-path-input.html');
   }

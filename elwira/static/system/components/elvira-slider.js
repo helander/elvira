@@ -23,7 +23,7 @@ export class ElviraSlider extends ViewComponent {
     super('./components/elvira-slider.html');
   }
 
-  onTemplateLoaded() {
+  onStart() {
     //console.log('Params', this.params);
     this.shadowRoot.appendChild(this.createComponent(this.params));
   }
@@ -89,7 +89,13 @@ export class ElviraSlider extends ViewComponent {
         } else {
              state = { name: params.name, value: val};
         }
+
+  Promise.resolve().then(() => {
+    requestAnimationFrame(() => {
         component.dispatchEvent(new CustomEvent("view-change", {detail: state, bubbles: true, composed: true} ));
+    });
+  });
+
       }
 
       function updateFromPosition(clientY) {

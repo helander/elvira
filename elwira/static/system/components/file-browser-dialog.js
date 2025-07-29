@@ -1,6 +1,6 @@
-import { ViewComponent } from './view_component.js';
+import { TemplateComponent } from './template_component.js';
 
-export class FileBrowserDialog extends ViewComponent {
+export class FileBrowserDialog extends TemplateComponent {
   constructor() {
     super('./components/file-browser-dialog.html');
     this.selectedPath = null;
@@ -33,7 +33,7 @@ export class FileBrowserDialog extends ViewComponent {
 
     okBtn.addEventListener('click', () => {
       if (this.selectedPath) {
-        this.dispatchEvent(new CustomEvent('file-selected', {
+        this.dispatchEvent(new CustomEvent('file-found', {
           detail: {
             path: this.selectedPath,
             isDir: this.selectedIsDir

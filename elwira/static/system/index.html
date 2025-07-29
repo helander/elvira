@@ -9,6 +9,7 @@
   <script type="module" src="./components/elvira-filepath.js"></script>
   <script type="module" src="./components/elvira-target-midicc.js"></script>
   <script type="module" src="./components/elvira-target-control.js"></script>
+  <script type="module" src="./components/elvira-target-parameter.js"></script>
   <!--script type="module" src="./main.js"></script-->
   <style>
     .control-container {
@@ -24,8 +25,8 @@
   <h1>Elvira static controls</h1>
   <div id="static-container" class="control-container">
     <elvira-control>
-       <elvira-target-midicc index="200"></elvira-target-midicc>
-       <elvira-filepath name="Soundfont"></elvira-filepath>
+       <elvira-target-parameter uri="urn:ardour:a-fluidsynth:sf2file"></elvira-target-parameter>
+       <elvira-filepath name="SF2 File"></elvira-filepath>
     </elvira-control>
     <elvira-control>
        <elvira-target-control index="4"></elvira-target-control>

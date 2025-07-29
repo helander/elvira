@@ -4,12 +4,26 @@ export class TargetComponent extends HTMLElement {
   constructor() {
     super();
     //this.component_role = 'target';
-    //console.error('constructor '+this.tagName);
+    console.error('constructor '+this.tagName);
   }
 
  async connectedCallback() {
+    console.error('connectedCallback begin '+this.tagName);
+
+
+  Promise.resolve().then(() => {
+    requestAnimationFrame(() => {
+      this.dispatchEvent(new CustomEvent('target-register', {
+        detail: {},
+        bubbles: true,
+        composed: true
+      }));
+    });
+  });
+
+
+
     this.classList.add('target');;
-    //console.error('connectedCallback begin '+this.tagName);
      this.elvira_node = this.getAttribute("node");
      if (this.elvira_node === null) {
        const found = this.findAncestorAttribute('node');

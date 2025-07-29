@@ -1,9 +1,9 @@
 import './file-path-input.js';
 import './file-browser-dialog.js';
 
-import { ViewComponent } from './view_component.js';
+import { TemplateComponent } from './template_component.js';
 
-export class FileSelectorDialog extends ViewComponent {
+export class FileSelectorDialog extends TemplateComponent {
   constructor() {
     super('./components/file-selector-dialog.html');
     this.selectedPath = '';
@@ -29,7 +29,13 @@ export class FileSelectorDialog extends ViewComponent {
       const path = input.shadowRoot.getElementById('path').value;
       this.selectedPath = path;
       modal.removeAttribute('open');
-      console.log("Selected path:", path);
+      this.dispatchEvent(new CustomEvent('file-selected', {
+          detail: {
+            path: this.selectedPath
+          },
+          bubbles: true,
+          composed: true
+      }));
     });
 
     // Forward file browser open request to dialog
@@ -38,7 +44,7 @@ export class FileSelectorDialog extends ViewComponent {
     });
 
     // Handle file selection from dialog and forward to input
-    this.addEventListener('file-selected', e => {
+    this.addEventListener('file-found', e => {
       input.setPath(e.detail.path);
     });
   }

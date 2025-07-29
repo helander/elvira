@@ -1,21 +1,26 @@
 // view_component.js
-import { loadTemplate } from './template_loader.js';
+import { TemplateComponent } from './template_component.js';
 
-export class ViewComponent extends HTMLElement {
+export class ViewComponent extends TemplateComponent {
   constructor(templateUrl) {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._templateUrl = templateUrl;
-    //this.component_role = 'view';
+    super(templateUrl);
     this.params = {};
-    //console.error('construct '+this.tagName);
   }
 
-  async connectedCallback() {
+  onTemplateLoaded() {
+
+  Promise.resolve().then(() => {
+    requestAnimationFrame(() => {
+      this.dispatchEvent(new CustomEvent('view-register', {
+        detail: {},
+        bubbles: true,
+        composed: true
+      }));
+    });
+  });
+
+
     this.classList.add('view');
-    //console.error('connectedCallback begin '+this.tagName);
-    const template = await loadTemplate(this._templateUrl);
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
     let x;
     if (x = this.getAttribute("max")) {this.params.max = x;}
     if (x = this.getAttribute("min")) {this.params.min = x;}
@@ -32,13 +37,13 @@ export class ViewComponent extends HTMLElement {
         this.params.points = points;
     }
 
-    this.onTemplateLoaded();
+    this.onStart();
     //console.error('connectedCallback end '+this.tagName);
 
   }
 
   // Optionally overridden in child classes
-  onTemplateLoaded() {}
+  onStart() {}
 
   update(info) {
       console.error('Missing update method in view sub class');

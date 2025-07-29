@@ -11,26 +11,26 @@ export class ElviraFilepath extends ViewComponent {
   }
 
 
-  onTemplateLoaded() {
+  onStart() {
     let x;
     if (x = this.getAttribute("name")) {this.params.name = x;}
     //console.log('Params', this.params);
-    //this.component = this.shadowRoot.querySelector(".component");
+    this.component = this.shadowRoot.querySelector(".component");
     //const valueDisplay = this.shadowRoot.querySelector(".component-value");
     const nameDisplay = this.shadowRoot.querySelector(".component-name");
     nameDisplay.textContent = this.params.name;
     this.addEventListener('file-selected', event => {
-       console.log('filesel',event.detail);
        const filename = this.shadowRoot.querySelector("#filename");
        filename.innerHTML = shortenFilePath(event.detail.path).split('').map(c => `<span>${c}</span>`).join('');
+
+  Promise.resolve().then(() => {
+    requestAnimationFrame(() => {
+       this.component.dispatchEvent(new CustomEvent("view-change", {detail: {value: event.detail.path}, bubbles: true, composed: true} ));
+    });
+  });
     });
   }
 
-/*
-  reportState() {
-     this.component.dispatchEvent(new CustomEvent("view-change", {detail: this.component_state, bubbles: true, composed: true} ));
-  }
-*/
 
  update(info) {
     console.warn('elvira-filepath update',info);
@@ -40,12 +40,8 @@ export class ElviraFilepath extends ViewComponent {
 
 
 function shortenFilePath(path) {
-  // Get the file name (after last slash)
   const fileName = path.split('/').pop();
-
-  // Remove the extension (after last dot)
   const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-
   return baseName;
 }
 
