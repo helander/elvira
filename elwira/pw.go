@@ -311,12 +311,13 @@ func NodePropsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if len(nodes) == 0 {
-		http.NotFound(w, r)
+	        json.NewEncoder(w).Encode(nodes)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(nodes[0])
 }
 

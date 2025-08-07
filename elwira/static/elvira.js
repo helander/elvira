@@ -47,7 +47,7 @@ function add_step(name, step, plugin, showui) {
 // Open control
 // =========================================================================================
 function openControl(node) {
-    const url = "/controls.html?node="+node;
+    const url = "/control?context="+node;
     const windowName = "control"+node;
     win = window.open(url, windowName);
 }
@@ -55,20 +55,20 @@ function openControl(node) {
 // =========================================================================================
 // Open midi
 // =========================================================================================
-function openMidi(node) {
-    const url = "/midicc.html?node="+node;
-    const windowName = "midicc"+node;
-    win = window.open(url, windowName);
-}
+//function openMidi(node) {
+//    const url = "/midicc.html?node="+node;
+//    const windowName = "midicc"+node;
+//    win = window.open(url, windowName);
+//}
 
 // =========================================================================================
 // Open params
 // =========================================================================================
-function openParams(node) {
-    const url = "/params.html?node="+node;
-    const windowName = "params"+node;
-    win = window.open(url, windowName);
-}
+//function openParams(node) {
+//    const url = "/params.html?node="+node;
+//    const windowName = "params"+node;
+//    win = window.open(url, windowName);
+//}
 
 // =========================================================================================
 // Open log
@@ -120,8 +120,8 @@ function populate_instance_list() {
             <td id="preset-${item.id}"></td>
             <td><a href="#" onclick="openLog(${item.pid})">Log</a></td>
             <td><a href="#" onclick="openControl(${item.id})">Controls</a></td>
-            <td><a href="#" onclick="openParams(${item.id})">Params</a></td>
-            <td><a href="#" onclick="openMidi(${item.id})">MidiCC</a></td>
+            <!--td><a href="#" onclick="openParams(${item.id})">Params</a></td-->
+            <!--td><a href="#" onclick="openMidi(${item.id})">MidiCC</a></td-->
             <td><input type="range" step="0.01" id="volume-${item.id}"></a></td>
             <td><button onclick="show_save_preset_popup(this)" data-id="${item.id}">Save</button></td>
             <td><button onclick="delete_instance(${item.id},${item.pid})">Delete</button></td>
