@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Elvira controls</title>
-  <script type="module" src="./components/endpoint_components.js"></script>
-  <script type="module" src="./components/view_components.js"></script>
+  <script type="module" src="https://helander-components.github.io/device-control/index.js"></script>
   <script type="module" src="./main.js"></script>
   <style>
     .control-container {
@@ -16,26 +15,26 @@
 
 </head>
 <body>
-  <h1>Elvira dynamic controls</h1>
+  <h1>Dynamic device controls</h1>
   <div id="dynamic-container" class="control-container"></div>
-  <h1>Elvira static controls</h1>
+  <h1>Static device controls</h1>
   <div id="static-container" class="control-container">
-    <elvira-control name="SF2 fil">
+    <device-control name="SF2 fil">
        <lv2parameter-endpoint uri="urn:ardour:a-fluidsynth:sf2file"></lv2parameter-endpoint>
        <filepath-view></filepath-view>
-    </elvira-control>
-    <elvira-control name="level">
+    </device-control>
+    <device-control name="level">
        <lv2control-endpoint index="4"></lv2control-endpoint>
        <slider-view max="207" min="-80" integer></slider-view>
-    </elvira-control>
-    <elvira-control name="Step up">
+    </device-control>
+    <device-control name="Step up">
        <midicc-endpoint index="1"></midicc-endpoint>
        <select-view pos="1" >
          <option value="0">Chorale</option>
          <option value="64">Off</option>
          <option value="127">Tremolo</option>
        </select-view>
-    </elvira-control>
+    </device-control>
   </div>
 </body>
 </html>
