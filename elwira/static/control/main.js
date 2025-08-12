@@ -1,6 +1,3 @@
-//import './components/view_components.js';
-//import './components/endpoint_components.js';
-
 
 async function buildUI() {
   const params = new URLSearchParams(window.location.search);
