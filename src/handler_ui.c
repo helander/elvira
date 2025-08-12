@@ -69,6 +69,7 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
 
    if (selectedUI) {
      const char* host_type_uri = "http://lv2plug.in/ns/extensions/ui#Gtk3UI";
+//     const char* host_type_uri = "http://lv2plug.in/ns/extensions/ui#UI";
      LilvNode* host_type = lilv_new_uri(constants.world, host_type_uri);
      if (!lilv_ui_is_supported(selectedUI, suil_ui_supported, host_type, &selected_ui_type)) {
         selectedUI = NULL;
@@ -104,6 +105,7 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
 
    if (selectedUI) {
      host->suil_instance = suil_instance_new(
+//       suil_host, (void*)host, NULL,
        suil_host, (void*)host, "http://lv2plug.in/ns/extensions/ui#Gtk3UI",
        lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)),
        lilv_node_as_string(lilv_ui_get_uri(selectedUI)), lilv_node_as_string(selected_ui_type),

@@ -229,9 +229,9 @@ int node_setup() {
    pw_properties_set(props, "elvira.plugin", config_plugin_uri);
    pw_properties_set(props, "elvira.preset", config_preset_uri);
    pw_properties_set(props, "elvira.host.info.base", host_info_base());
-   pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
-   pw_properties_set(props, "elvira.host.info.params", host_info_params());
-   pw_properties_set(props, "elvira.host.midi.params", host_midi_params());
+   //pw_properties_set(props, "elvira.host.info.ports", host_info_ports());
+   //pw_properties_set(props, "elvira.host.info.params", host_info_params());
+   //pw_properties_set(props, "elvira.host.midi.params", host_midi_params());
    pw_properties_set(props, "elvira.gain", sgain);
    pw_properties_set(props, "elvira.pid", spid);
    pw_properties_set(props, "elvira.plugin_name", host->plugin_name);

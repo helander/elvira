@@ -265,6 +265,7 @@ char *host_info_base() {
    return info;
 }
 
+/*
 char *host_info_ports() {
    const LilvPlugin *p = host->lilvPlugin;
    strcpy(info, "[");
@@ -530,7 +531,8 @@ char *host_midi_params() {
             LilvNode* sp_pred = lilv_new_uri(constants.world, LILV_NS_LV2 "scalePoint");
             const LilvNodes* scale_points =
                 lilv_world_find_nodes(constants.world, param, sp_pred, NULL);
-            /*if (scale_points)*/ strcat(info, ",\"scale\":[");
+            //if (scale_points)
+               strcat(info, ",\"scale\":[");
             int comma = 0;
             LILV_FOREACH(nodes, k, scale_points) {
                 const LilvNode* sp_bnode = lilv_nodes_get(scale_points, k);
@@ -555,7 +557,8 @@ char *host_midi_params() {
                 lilv_nodes_free((LilvNodes*)values);
             }
 
-            /*if (scale_points)*/ strcat(info, "]");
+            //if (scale_points) 
+               strcat(info, "]");
 
             lilv_node_free(sp_pred);
             lilv_nodes_free((LilvNodes*)scale_points);
@@ -568,3 +571,4 @@ char *host_midi_params() {
    return info;
 }
 
+*/

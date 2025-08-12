@@ -1,3 +1,4 @@
+extern void connect_init();
 /*
  * ============================================================================
  *  File:       elvira.c
@@ -137,6 +138,8 @@ int main(int argc, char **argv) {
    pw_init(&argc, &argv);
    runtime_init();
    startup();
+
+   connect_init();
 
    gtk_main();  // Here we spend the time in the main thread
 

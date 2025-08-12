@@ -51,6 +51,7 @@ add_executable(elvira
     src/constants.c
     src/runtime.c
     src/util.c
+    src/connect.c
 )
 
 target_include_directories(elvira PRIVATE
