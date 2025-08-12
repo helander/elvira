@@ -11,12 +11,15 @@
  * ============================================================================
  */
 
+
 #include <gtk/gtk.h>
+#include <suil/suil.h>
 #include <lilv/lilv.h>
 #include <lv2/instance-access/instance-access.h>
 #include <lv2/ui/ui.h>
 #include <stdio.h>
-#include <suil/suil.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "constants.h"
 #include "handler.h"
@@ -33,6 +36,46 @@
 /* ========================================================================== */
 /*                              Local Functions                               */
 /* ========================================================================== */
+
+static int find_ui_binary(const char* bundle_dir,
+                          const char* ui_uri_str,
+                          char* binary_out, size_t binary_size)
+{
+    LilvWorld* world = lilv_world_new();
+    LilvNode* bundle_uri = lilv_new_file_uri(world, NULL, bundle_dir);
+    lilv_world_load_bundle(world, bundle_uri);
+
+    LilvNode* ui_uri   = lilv_new_uri(world, ui_uri_str);
+    LilvNode* p_binary = lilv_new_uri(world, LV2_CORE__binary);
+
+    LilvNodes* binaries = lilv_world_find_nodes(world, ui_uri, p_binary, NULL);
+    if (binaries && lilv_nodes_size(binaries) > 0) {
+        const char* binary_path = lilv_uri_to_path(
+            lilv_node_as_uri(lilv_nodes_get_first(binaries)));
+
+        const char* slash = strrchr(binary_path, '/');
+        snprintf(binary_out, binary_size,
+                 "%s", slash ? slash + 1 : binary_path);
+
+        lilv_nodes_free(binaries);
+        lilv_node_free(ui_uri);
+        lilv_node_free(p_binary);
+        lilv_node_free(bundle_uri);
+        lilv_world_free(world);
+        return 0;
+    }
+
+    // Not found
+    lilv_nodes_free(binaries);
+    lilv_node_free(ui_uri);
+    lilv_node_free(p_binary);
+    lilv_node_free(bundle_uri);
+    lilv_world_free(world);
+    return -1;
+}
+
+
+
 static uint32_t ui_port_index(void* const controller, const char* symbol) {
    HostPort* port;
    SET_FOR_EACH(HostPort*, port, &host->ports) {
@@ -105,10 +148,12 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
 
    if (selectedUI) {
      host->suil_instance = suil_instance_new(
-//       suil_host, (void*)host, NULL,
-       suil_host, (void*)host, "http://lv2plug.in/ns/extensions/ui#Gtk3UI",
+       suil_host,
+       (void*)host,
+       "http://lv2plug.in/ns/extensions/ui#Gtk3UI",
        lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)),
-       lilv_node_as_string(lilv_ui_get_uri(selectedUI)), lilv_node_as_string(selected_ui_type),
+       lilv_node_as_string(lilv_ui_get_uri(selectedUI)),
+       lilv_node_as_string(selected_ui_type),
        lilv_file_uri_parse(lilv_node_as_uri(lilv_ui_get_bundle_uri(selectedUI)), NULL),
        lilv_file_uri_parse(lilv_node_as_uri(lilv_ui_get_binary_uri(selectedUI)), NULL),
        ui_features);
@@ -121,6 +166,35 @@ int on_ui_start(struct spa_loop* loop, bool async, uint32_t seq, const void* dat
       pw_log_error("Could not create UI for %s", config_nodename);
      }
    }
+
+   const char* ui_uri       = "http://helander.network/lv2ui/madigan";
+   const char* ui_type_uri  = "http://lv2plug.in/ns/extensions/ui#UI"; 
+   const char* bundle_dir   = "/usr/lib/lv2/madigan.lv2";
+
+   char binary_file[256];
+   if (find_ui_binary(bundle_dir, ui_uri, binary_file, sizeof(binary_file)) != 0) {
+        fprintf(stderr, "Error: Could not find lv2:binary for UI %s in %s\n",
+                ui_uri, bundle_dir);
+   } else {
+       char binary_path[512];
+       snprintf(binary_path, sizeof(binary_path), "%s/%s", bundle_dir, binary_file);
+       SuilInstance* inst = suil_instance_new(
+          suil_host,
+          (void*)host,
+          NULL,
+          lilv_node_as_string(lilv_plugin_get_uri(host->lilvPlugin)),
+          ui_type_uri,
+          bundle_dir,
+          bundle_path,
+          ui_features
+       );
+       if (!inst) {
+           pw_log_error("Failed to create suil instance for Madigan UI");
+       } else {
+          pw_log_info("Madigan UI instance created successfully for plugin");
+       }
+   }
+
    return 0;
 }
 
@@ -203,3 +277,5 @@ int on_input_midi_event(struct spa_loop* loop, bool async, uint32_t port_index, 
      pw_log_debug("Input Midi 0x%02x 0x%02x 0x%02x",mididata[0],mididata[1],mididata[2]);
    }
 }
+
+
