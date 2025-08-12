@@ -1,5 +1,5 @@
-import './components/view_components.js';
-import './components/endpoint_components.js';
+//import './components/view_components.js';
+//import './components/endpoint_components.js';
 
 
 async function buildUI() {
@@ -18,7 +18,7 @@ async function buildUI() {
   configs.sort((a, b) => b.prio - a.prio);
 
   for (const { endpoint, view, name } of configs) {
-    const pair = document.createElement('elvira-control');
+    const pair = document.createElement('device-control');
     const endpoint_el = document.createElement(endpoint.element);
     Object.keys(endpoint).forEach(key => {
        if (key != 'element') {
